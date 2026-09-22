@@ -25,6 +25,47 @@ button,input,textarea,select{font:inherit}.side{position:fixed;left:0;top:0;bott
 <nav id="bottom" class="bottom"></nav><div id="toast" class="toast"></div>
 <div id="modal" class="modal" onclick="if(event.target===this)closeModal()"><div id="modalbox" class="modalbox"></div></div>
 <script>
+const SUPABASE_URL='https://vxejoefeufqaplfsbcpy.supabase.co';
+const SUPABASE_KEY='sb_publishable_2YRXqqCNGeIf65o_Rqx3OA_lLe_9Lmf';
+let AUTH=null, ORBIT_WORKSPACE=null;
+const sb={
+  async request(path,options={}){
+    const headers=Object.assign({'apikey':SUPABASE_KEY,'Content-Type':'application/json'},options.headers||{});
+    if(AUTH?.access_token) headers.Authorization='Bearer '+AUTH.access_token;
+    const r=await fetch(SUPABASE_URL+'/rest/v1/'+path,Object.assign({},options,{headers}));
+    if(!r.ok) throw new Error('Supabase '+r.status+': '+await r.text());
+    return r.status===204?null:r.json();
+  },
+  from(table){
+    const self=this;
+    return {
+      insert(row){return {async then(resolve,reject){try{const v=await self.request(table,{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(row)});resolve(v)}catch(e){reject(e)}}}},
+      async select(){return self.request(table)},
+      async update(row){return self.request(table,{method:'PATCH',body:JSON.stringify(row)})}
+    };
+  }
+};
+async function cloudTask(title,priority='medium'){
+  if(!AUTH||!ORBIT_WORKSPACE)return;
+  try{await sb.request('orbit_tasks',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({workspace_id:ORBIT_WORKSPACE,title,priority,created_by:AUTH.user?.id||AUTH.id})})}catch(e){console.warn('cloudTask',e)}
+}
+async function initAuth(){
+  try{
+    const raw=localStorage.getItem('prism_orbit_auth');
+    if(raw) AUTH=JSON.parse(raw);
+    if(AUTH?.access_token){
+      const u=await fetch(SUPABASE_URL+'/auth/v1/user',{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+AUTH.access_token}});
+      if(!u.ok) throw new Error('session expired');
+      const user=await u.json(); AUTH.user=user; AUTH.id=user.id;
+      const ws=await fetch(SUPABASE_URL+'/rest/v1/orbit_members?user_id=eq.'+user.id+'&select=workspace_id&limit=1',{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+AUTH.access_token}});
+      if(ws.ok){const rows=await ws.json(); if(rows[0]) ORBIT_WORKSPACE=rows[0].workspace_id;}
+    }
+  }catch(e){AUTH=null;ORBIT_WORKSPACE=null;localStorage.removeItem('prism_orbit_auth');console.warn('Auth boot',e)}
+}
+function safeBoot(){
+  window.addEventListener('error',e=>{console.error(e.error||e.message);toast('Orbit recovered from a UI error.');});
+  try{show('home');renderLeads();renderTasks();initAuth();}catch(e){console.error(e);document.getElementById('pages').innerHTML='<section class="page active"><div class="card"><h2>Orbit Core</h2><p class="muted">The interface recovered from a startup error.</p><button class="btn primary" onclick="location.reload()">Reload Orbit</button></div></section>'}
+}
 const KEY='prism_orbit_v10';
 const NAV=[
 ['home','⌂','Command Center'],['research','⌕','Research Intelligence'],['marketing','◎','Marketing AI'],['sales','↗','Sales AI'],['clients','◇','Clients'],['projects','▣','Projects'],['tasks','✓','Tasks'],['team','◉','Team'],['chat','☏','Prism Chat'],['growth','✦','Growth'],['finance','◈','Finance'],['ai','✧','Orbit AI'],['reports','▤','Reports'],['notifications','🔔','Notifications'],['settings','⚙','Settings']
@@ -72,11 +113,11 @@ function settings(){return '<div class="grid g2">'+card('Workspace & privacy','<
 function openVoice(){if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){toast('Voice recognition is not supported in this browser.');return}const R=window.SpeechRecognition||window.webkitSpeechRecognition,r=new R();r.lang='en-IN';r.interimResults=false;r.onstart=()=>toast('Orbit listening…');r.onerror=()=>toast('Voice input stopped');r.onresult=e=>{const q=e.results[0][0].transcript;toast('Heard: '+q);document.getElementById('cmd')&&(document.getElementById('cmd').value=q);command()};r.start()}
 function copyOut(){if(window.out)navigator.clipboard?.writeText(window.out);toast('Copied to clipboard')}
 function resetAll(){if(confirm('Reset Prism Orbit local workspace data?')){localStorage.removeItem(KEY);location.reload()}}
-function searchAll(q){if(!q)return;const x=q.toLowerCase();const found=N.find(n=>n[2].toLowerCase().includes(x));if(found)show(found[0])}
+function searchAll(q){if(!q)return;const x=q.toLowerCase();const found=NAV.find(n=>n[2].toLowerCase().includes(x));if(found)show(found[0])}
 const P={home,research,marketing,sales,clients,projects,tasks,team,chat,growth,finance,ai,reports,notifications,settings};
 document.getElementById('nav').innerHTML=NAV.map(x=>'<button data-k="'+x[0]+'" onclick="show(\''+x[0]+'\')"><i>'+x[1]+'</i>'+x[2]+'</button>').join('');
 document.getElementById('bottom').innerHTML=NAV.slice(0,5).map(x=>'<button data-k="'+x[0]+'" onclick="show(\''+x[0]+'\')"><b>'+x[1]+'</b>'+x[2]+'</button>').join('');
 document.getElementById('pages').innerHTML=Object.entries(P).map(x=>'<section id="p-'+x[0]+'" class="page">'+x[1]()+'</section>').join('');
-show('home');renderLeads();renderTasks();if(typeof initAuth==='function')initAuth();
+safeBoot();
 </script>
 </body></html>
