@@ -3,7 +3,7 @@ import { getSessionUser, isApprover, outreachBody, requireAdminDb, sendApprovedE
 
 export async function POST(req: Request) {
   const user = getSessionUser(req);
-  if (!isApprover(user)) return NextResponse.json({ ok: false, error: "Only Amal or Aadil can approve outreach." }, { status: 403 });
+  if (!user || !isApprover(user)) return NextResponse.json({ ok: false, error: "Only Amal or Aadil can approve outreach." }, { status: 403 });
   try {
     const { prospectId, action, approvalId } = await req.json();
     const db = await requireAdminDb();
