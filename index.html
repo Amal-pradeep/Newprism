@@ -55,21 +55,41 @@ const ORBIT_BETA_USERS={
   'msaneeshnath@gmail.com':{name:'Aneesh',role:'design',hash:'d2cb4770aa6dd9f3f9a61688d1dc24b68f4d9db04a0f18cd95db585ae600efa3'}
 };
 async function loginOrbit(){
+  const msg=document.getElementById('authMsg');
+  const btn=document.querySelector('#authGate button[onclick="loginOrbit()"]');
   const email=document.getElementById('loginEmail')?.value.trim().toLowerCase();
   const password=document.getElementById('loginPassword')?.value||'';
-  if(!email||!password)return toast('Enter your company email and Orbit password.');
-  const account=ORBIT_BETA_USERS[email];
-  if(!account)return toast('This email is not approved for Orbit.');
-  const hash=await sha256(password);
-  if(hash!==account.hash)return toast('Incorrect Orbit password.');
-  AUTH={beta:true,id:'beta-'+email,user:{email,name:account.name}};
-  localStorage.setItem('prism_orbit_beta_auth',JSON.stringify(AUTH));
-  ORBIT_WORKSPACE=null;
-  hideAuthGate();
-  buildRoleAwareNav();
-  show('home');
-  greetTeam();
-  toast('Welcome to Orbit, '+account.name+'.');
+  const setMsg=(text,show=true)=>{if(msg){msg.textContent=text;msg.style.display=show?'block':'none'}};
+  try{
+    if(!email||!password){setMsg('Enter your company email and Orbit password.');return}
+    const account=ORBIT_BETA_USERS[email];
+    if(!account){setMsg('This email is not approved for Orbit.');return}
+    if(btn){btn.disabled=true;btn.textContent='Opening Orbit…'}
+    const hash=await sha256(password);
+    if(hash!==account.hash){setMsg('Incorrect Orbit password.');if(btn){btn.disabled=false;btn.textContent='Enter Orbit'}return}
+    AUTH={beta:true,id:'beta-'+email,user:{email,name:account.name}};
+    localStorage.setItem('prism_orbit_beta_auth',JSON.stringify(AUTH));
+    ORBIT_WORKSPACE=null;
+    buildRoleAwareNav();
+    hideAuthGate();
+    setMsg('',false);
+    requestAnimationFrame(()=>{
+      try{
+        show('home');
+        greetTeam();
+        toast('Welcome to Orbit, '+account.name+'.');
+      }catch(e){
+        console.error('Orbit login navigation failed',e);
+        showAuthGate();
+        setMsg('Login succeeded, but Orbit could not open the workspace. Please reload once and try again.');
+      }finally{if(btn){btn.disabled=false;btn.textContent='Enter Orbit'}}
+    });
+  }catch(e){
+    console.error('Orbit login failed',e);
+    showAuthGate();
+    setMsg('Orbit could not complete the login. Please try again.');
+    if(btn){btn.disabled=false;btn.textContent='Enter Orbit'}
+  }
 }
 function hideAuthGate(){const g=document.getElementById('authGate');if(g)g.style.display='none'}
 function showAuthGate(){const g=document.getElementById('authGate');if(g)g.style.display='grid'}
@@ -444,6 +464,7 @@ function buildRoleAwareNav(){
 }
 buildRoleAwareNav();
 document.getElementById('pages').innerHTML='';
+document.getElementById('loginPassword')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();loginOrbit()}});
 /* Boot after the module registry is initialized so mobile Safari cannot hit a TDZ startup failure. */
 safeBoot();
 </script><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));}</script>
