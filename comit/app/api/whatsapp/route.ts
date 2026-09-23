@@ -1,0 +1,6 @@
+import {NextResponse} from "next/server";
+import {getSessionUser} from "@/lib/outreach";
+const PUBLIC_NUMBER=process.env.COMIT_PUBLIC_WHATSAPP||"919745643726";
+const TEAM={Amal:process.env.COMIT_AMAL_WHATSAPP||"",Aadil:process.env.COMIT_AADIL_WHATSAPP||"",Aneesh:process.env.COMIT_ANEESH_WHATSAPP||"",Jishnu:process.env.COMIT_JISHNU_WHATSAPP||""};
+export async function GET(req:Request){const u=getSessionUser(req);if(!u)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});return NextResponse.json({ok:true,public:{number:PUBLIC_NUMBER,href:"https://wa.me/"+PUBLIC_NUMBER},team:TEAM,configured:Object.values(TEAM).filter(Boolean).length});}
+export async function POST(req:Request){const u=getSessionUser(req);if(!u)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});const b=await req.json().catch(()=>({}));const member=String(b.member||"");const number=TEAM[member as keyof typeof TEAM];if(!number)return NextResponse.json({ok:false,error:"Team WhatsApp is not configured yet. Add the member number as a Vercel environment variable."},{status:409});return NextResponse.json({ok:true,href:"https://wa.me/"+number.replace(/\\D/g,"")+"?text="+encodeURIComponent(String(b.message||"COMIT update"))});}
