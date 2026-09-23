@@ -25,3 +25,4 @@ export default function Login(){
     </form>
     <div className="mt-6 flex items-center gap-2 text-xs text-[var(--prism-muted)]"><Sparkles size={14}/>Email-only team access · no password</div>
   </div></main>
+}
