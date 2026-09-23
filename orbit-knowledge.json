@@ -1,0 +1,135 @@
+{
+  "version": "2026-09-23",
+  "product": {
+    "name": "Prism Orbit",
+    "company": "Prism of Stories",
+    "purpose": "AI agency operating system for research, sales, marketing, clients, team operations, finance, automation and business intelligence."
+  },
+  "architecture": [
+    "Observe",
+    "Research",
+    "Understand",
+    "Decide",
+    "Approve",
+    "Execute",
+    "Monitor",
+    "Learn"
+  ],
+  "company": {
+    "website": "prismofstories.com",
+    "tagline": "Shaping Brands, Framing Stories",
+    "services": [
+      "Website/app development",
+      "AI development",
+      "SEO",
+      "Google Ads",
+      "Meta Ads",
+      "Interactive poster design",
+      "Instagram handling",
+      "Video editing",
+      "Animation",
+      "3D design",
+      "Branding",
+      "Sales funnel building",
+      "Employee training",
+      "Business consultation",
+      "Market studies and gap identification",
+      "Cold calling"
+    ]
+  },
+  "products": [
+    {
+      "name": "Loons AI",
+      "purpose": "Business intelligence and automation layer for monitoring digital platforms, generating creative assets, recommending improvements and supporting business operations."
+    }
+  ],
+  "clients": [
+    {
+      "name": "Al Eliza Interiors",
+      "location": "Qatar / Dubai",
+      "work": [
+        "Website",
+        "SEO",
+        "Digital growth",
+        "Lead generation"
+      ]
+    },
+    {
+      "name": "Nostaza Restaurant",
+      "location": "Al Warqa, Dubai",
+      "work": [
+        "Social media",
+        "Delivery growth",
+        "Content",
+        "Marketing"
+      ]
+    }
+  ],
+  "team": [
+    {
+      "name": "Amalmenon",
+      "role": "Owner",
+      "email": "amalpradeep25@gmail.com"
+    },
+    {
+      "name": "Aadil",
+      "role": "Partner",
+      "email": "aadil.sudhir279@gmail.com"
+    },
+    {
+      "name": "Aneesh",
+      "role": "Design",
+      "email": "msaneeshnath@gmail.com"
+    },
+    {
+      "name": "Satheesh",
+      "role": "AI & Development"
+    }
+  ],
+  "sales": {
+    "market": "UAE",
+    "segments": [
+      "Hotels",
+      "Restaurants",
+      "Hospitality groups",
+      "Interior design",
+      "Hospitality consulting"
+    ],
+    "coldEmailRules": [
+      "Use Prism of Stories identity",
+      "Use prismofstories.com in signature",
+      "Never include Orbit links",
+      "CC Amal and Aadil where appropriate",
+      "Use public business contacts",
+      "Human approval before external sending",
+      "Respect opt-outs"
+    ]
+  },
+  "restaurantProspects": [
+    "Al Saraya Group",
+    "Seventy Six Group",
+    "FoodFund International",
+    "Sunset Hospitality Group",
+    "Glee Hospitality Solutions",
+    "Dynamic Kitchen",
+    "Just Group",
+    "Nawab Restaurant",
+    "Cloud 10 Restaurant & Cafe"
+  ],
+  "integrations": [
+    "Gmail",
+    "Google Calendar",
+    "Instagram",
+    "Meta Ads",
+    "Supabase",
+    "n8n",
+    "Railway",
+    "GitHub"
+  ],
+  "controls": [
+    "Human approval for external actions",
+    "No invented live metrics",
+    "Protect private data",
+    "Billing is a hard stop for infrastructure actions"
+  ]
+}
