@@ -439,8 +439,8 @@ function allowedNav(){
 const P={home,manager,research,marketing,sales,clients,projects,tasks,team,aneesh,chat,growth,finance,accounts,ai,reports,notifications,settings,autopilot};
 function buildRoleAwareNav(){
   const n=document.getElementById('nav'),bt=document.getElementById('bottom');
-  if(n)n.innerHTML=allowedNav().map(x=>'<button data-k="'+x[0]+'" onclick="show(\\''+x[0]+'\\')"><i>'+x[1]+'</i>'+x[2]+'</button>').join('');
-  if(bt)bt.innerHTML=allowedNav().slice(0,5).map(x=>'<button data-k="'+x[0]+'" onclick="show(\\''+x[0]+'\\')"><b>'+x[1]+'</b>'+x[2]+'</button>').join('');
+  if(n)n.innerHTML=allowedNav().map(x=>'<button data-k="'+x[0]+'" onclick="show(&quot;'+x[0]+'&quot;)"><i>'+x[1]+'</i>'+x[2]+'</button>').join('');
+  if(bt)bt.innerHTML=allowedNav().slice(0,5).map(x=>'<button data-k="'+x[0]+'" onclick="show(&quot;'+x[0]+'&quot;)"><b>'+x[1]+'</b>'+x[2]+'</button>').join('');
 }
 buildRoleAwareNav();
 document.getElementById('pages').innerHTML='';
