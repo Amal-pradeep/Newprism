@@ -31,7 +31,7 @@ function recordRequest(req, res, startedAt) {
 function monitoringSummary() {
   const routes = Object.entries(orbitMetrics.routes).map(([path,r]) => ({path,count:r.count,errors:r.errors,avgMs:r.count?Math.round(r.totalMs/r.count):0,maxMs:r.maxMs})).sort((a,b)=>b.count-a.count);
   const mem=process.memoryUsage();
-  return {service:'prism-orbit',version:'2026.09.23-gmail-monitoring',uptime_seconds:Math.floor(process.uptime()),started_at:new Date(orbitMetrics.startedAt).toISOString(),requests:{total:orbitMetrics.totalRequests,errors:orbitMetrics.totalErrors,error_rate:orbitMetrics.totalRequests?Number((orbitMetrics.totalErrors/orbitMetrics.totalRequests).toFixed(4)):0,status_counts:orbitMetrics.statusCounts,routes},resources:{rss_mb:Number((mem.rss/1048576).toFixed(1)),heap_used_mb:Number((mem.heapUsed/1048576).toFixed(1)),heap_total_mb:Number((mem.heapTotal/1048576).toFixed(1))},gmail:{configured:gmailConfigured()},recent_errors:orbitMetrics.recentErrors,recent_requests:orbitMetrics.recentRequests,client_errors:orbitMetrics.clientErrors};
+  return {service:'prism-orbit',version:'2026.09.23-orbit-v2',uptime_seconds:Math.floor(process.uptime()),started_at:new Date(orbitMetrics.startedAt).toISOString(),requests:{total:orbitMetrics.totalRequests,errors:orbitMetrics.totalErrors,error_rate:orbitMetrics.totalRequests?Number((orbitMetrics.totalErrors/orbitMetrics.totalRequests).toFixed(4)):0,status_counts:orbitMetrics.statusCounts,routes},resources:{rss_mb:Number((mem.rss/1048576).toFixed(1)),heap_used_mb:Number((mem.heapUsed/1048576).toFixed(1)),heap_total_mb:Number((mem.heapTotal/1048576).toFixed(1))},gmail:{configured:gmailConfigured()},recent_errors:orbitMetrics.recentErrors,recent_requests:orbitMetrics.recentRequests,client_errors:orbitMetrics.clientErrors};
 }
 
 const USERS = {
@@ -178,7 +178,8 @@ function serveIndex(req, res) {
     const outreachScript = fs.readFileSync(path.join(root, 'outreach.js'), 'utf8');
     const monitoringScript = fs.readFileSync(path.join(root, 'monitoring.js'), 'utf8');
     const uxScript = fs.readFileSync(path.join(root, 'orbit-ux.js'), 'utf8');
-    html = html.replace('</body>', '<script>' + outreachScript.replaceAll('</script', '<\\/script') + '</script><script>' + monitoringScript.replaceAll('</script', '<\\/script') + '</script><script>' + uxScript.replaceAll('</script', '<\\/script') + '</script></body>');
+    const orbitV2Script = fs.readFileSync(path.join(root, 'orbit-v2.js'), 'utf8');
+    html = html.replace('</body>', '<script>' + outreachScript.replaceAll('</script', '<\\/script') + '</script><script>' + monitoringScript.replaceAll('</script', '<\\/script') + '</script><script>' + uxScript.replaceAll('</script', '<\\/script') + '</script><script>' + orbitV2Script.replaceAll('</script', '<\\/script') + '</script></body>');
     const session = readSession(req);
     if (session) {
       const safe = JSON.stringify({ email: session.email, name: session.name, role: session.role }).replace(/</g, '\\u003c');
@@ -232,7 +233,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && requestPath === '/api/logout') return send(res, 303, '', 'text/plain; charset=utf-8', { 'Location': '/', 'Set-Cookie': 'orbit_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax' });
   if (!['GET','POST'].includes(req.method)) return send(res,405,'Method Not Allowed','text/plain; charset=utf-8',{Allow:'GET, POST'});
 
-  if (requestPath === '/api/health') return send(res, 200, JSON.stringify({ status: 'ok', service: 'prism-orbit', version: '2026.09.23-gmail-monitoring', uptime_seconds: Math.floor(process.uptime()), node: process.versions.node, monitoring: true }), 'application/json; charset=utf-8');
+  if (requestPath === '/api/health') return send(res, 200, JSON.stringify({ status: 'ok', service: 'prism-orbit', version: '2026.09.23-orbit-v2', uptime_seconds: Math.floor(process.uptime()), node: process.versions.node, monitoring: true }), 'application/json; charset=utf-8');
   if (req.method === 'POST' && requestPath === '/api/client-error') {
     const u=readSession(req); if(!u) return send(res,401,JSON.stringify({error:'Authentication required.'}),'application/json; charset=utf-8');
     try { const b=await readBody(req); orbitMetrics.clientErrors.unshift({at:new Date().toISOString(),user:u.email,kind:String(b.get('kind')||'error').slice(0,80),message:String(b.get('message')||'').slice(0,1000),stack:String(b.get('stack')||'').slice(0,3000),path:String(b.get('path')||'/').slice(0,200)}); orbitMetrics.clientErrors=orbitMetrics.clientErrors.slice(0,25); return send(res,204,''); }
