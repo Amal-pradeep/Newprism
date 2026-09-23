@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#090511"><meta name="description" content="Prism Orbit — AI operating system for Prism of Stories">
+<meta name="theme-color" content="#090511"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><link rel="manifest" href="/manifest.webmanifest"><meta name="description" content="Prism Orbit — AI operating system for Prism of Stories">
 <title>Prism Orbit — AI Agency OS</title>
 <style>
 :root{--bg:#08050f;--bg2:#0d0819;--glass:#ffffff0b;--glass2:#ffffff12;--line:#ffffff18;--text:#faf8ff;--muted:#a9a0ba;--violet:#8b5cf6;--purple:#a855f7;--pink:#ec4899;--blue:#38bdf8;--cyan:#67e8f9;--gold:#f5c76a;--danger:#fb7185;--ok:#c084fc;--shadow:0 25px 90px #0008}
@@ -66,7 +66,7 @@ function safeBoot(){
 }
 const KEY='prism_orbit_v10';
 const NAV=[
-['home','⌂','Command Center'],['manager','♛','Amal’s Manager'],['research','⌕','Research Intelligence'],['marketing','◎','Marketing AI'],['sales','↗','Sales AI'],['clients','◇','Clients'],['projects','▣','Projects'],['tasks','✓','Tasks'],['team','◉','Team'],['chat','☏','Prism Chat'],['growth','✦','Growth'],['finance','◈','Finance'],['accounts','▤','Adhil · Accounts'],['ai','✧','Orbit AI'],['autopilot','⚡','Orbit Autopilot'],['reports','▤','Reports'],['notifications','🔔','Notifications'],['settings','⚙','Settings']
+['home','⌂','Command Center'],['manager','♛','Amal’s Manager'],['research','⌕','Research Intelligence'],['marketing','◎','Marketing AI'],['sales','↗','Sales AI'],['clients','◇','Clients'],['projects','▣','Projects'],['tasks','✓','Tasks'],['team','◉','Team'],['aneesh','✦','Aneesh Creative Lab'],['chat','☏','Prism Chat'],['growth','✦','Growth'],['finance','◈','Finance'],['accounts','▤','Adhil · Accounts'],['ai','✧','Orbit AI'],['autopilot','⚡','Orbit Autopilot'],['reports','▤','Reports'],['notifications','🔔','Notifications'],['settings','⚙','Settings']
 ];
 const DEFAULT_STATE={
 tasks:[['Review Nostaza campaign','High','Today'],['Prepare Dubai hospitality prospects','High','Open'],['Aneesh — restaurant reel','Creative','Open'],['Satheesh — Lunes AI automation','Technical','Open']],
@@ -245,6 +245,51 @@ async function exportAccountReport(){
   const blob=new Blob([text],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='prism-orbit-accounts-report.txt';a.click();URL.revokeObjectURL(url);toast('Report document exported');
 }
 
+
+function aneesh(){
+  return '<div class="card hero" style="min-height:300px;background:radial-gradient(circle at 82% 18%,#ec489922,transparent 36%),linear-gradient(145deg,#ffffff0d,#ffffff03)">'+
+  '<div class="ey">ANEESH · CREATIVE LAB</div>'+
+  '<h2>A creative cockpit for experiments, questions and audience growth.</h2>'+
+  '<p>Experiment with AI visual concepts, ask Orbit about design techniques and client marketing, turn ideas into repeatable content systems, and build a stronger creative portfolio and audience.</p>'+
+  '<div class="toolbar"><button class="btn ai" onclick="creativeAsk()">Ask Creative AI</button><button class="btn primary" onclick="saveCreativeIdea()">Save experiment</button><button class="btn" onclick="generateCreativeBrief()">Create a brief</button></div></div>'+
+  '<div class="grid g3" style="margin-top:12px">'+
+  card('🎨 AI Image Lab','<div class="metric p">LAB</div><div class="muted">Describe a visual concept, mood, composition or campaign asset and prepare an image-generation prompt.</div><button class="btn ai" onclick="document.getElementById(\'creativePrompt\')?.focus()">Start experiment</button>')+
+  card('🧠 Marketing Coach','<div class="metric">AI</div><div class="muted">Ask about hooks, reels, ads, positioning, content calendars, creative testing and client strategy.</div><button class="btn" onclick="document.getElementById(\'creativeAsk\')?.focus()">Ask a question</button>')+
+  card('📣 Audience Builder','<div class="metric">∞</div><div class="muted">Turn creative work into a repeatable public portfolio and audience-building system.</div><button class="btn primary" onclick="audiencePlan()">Build my plan</button>')+
+  '</div>'+
+  '<div class="grid g2" style="margin-top:12px">'+
+  '<div class="card"><div class="ey">AI IMAGE EXPERIMENT</div><textarea id="creativePrompt" class="area" placeholder="Example: cinematic Dubai restaurant launch poster, premium food photography, neon evening atmosphere, vertical 9:16, space for headline"></textarea><div class="toolbar"><button class="btn ai" onclick="prepareImagePrompt()">Refine prompt</button><button class="btn" onclick="saveCreativeIdea()">Save</button></div><div id="creativeOutput" class="result">Orbit will turn the idea into a production-ready prompt, composition notes and negative-prompt guidance. Image generation can be connected later without exposing API keys.</div></div>'+
+  '<div class="card"><div class="ey">ASK ANEESH'S CREATIVE COACH</div><textarea id="creativeAsk" class="area" placeholder="Ask: How can I make this restaurant reel more engaging? What hook should I test? How do I improve food poster hierarchy?"></textarea><div class="toolbar"><button class="btn ai" onclick="creativeAsk()">Ask Orbit</button></div><div id="creativeAnswer" class="result">Ask anything about design technique, client marketing, content strategy or creative execution.</div></div>'+
+  '</div>'+
+  '<div class="card" style="margin-top:12px"><div class="ey">AUDIENCE ENGINE</div><h2 style="margin:6px 0">Turn creative output into a personal creative footprint.</h2><div class="grid g3"><div class="module"><b>Show the process</b><div class="muted">Before/after, experiments, breakdowns and design decisions.</div></div><div class="module"><b>Teach one thing</b><div class="muted">Short tips about design, AI workflows and marketing lessons.</div></div><div class="module"><b>Publish consistently</b><div class="muted">Build a sustainable weekly rhythm rather than chasing random trends.</div></div></div><div id="audienceOutput" class="result">Tap “Build my plan” for a simple weekly audience-building system.</div></div>';
+}
+function prepareImagePrompt(){
+  const q=document.getElementById('creativePrompt')?.value.trim();if(!q)return toast('Describe the image first.');
+  const out='PRODUCTION PROMPT\n'+q+'\n\nSTYLE: premium commercial campaign visual; strong subject hierarchy; realistic lighting; polished composition; intentional negative space for copy; platform-ready framing.\n\nNEGATIVE GUIDANCE: distorted anatomy, unreadable text, clutter, low resolution, excessive effects, inconsistent perspective.\n\nCHECK: confirm brand, audience, aspect ratio and CTA before generation.';
+  document.getElementById('creativeOutput').textContent=out;localStorage.setItem('prism_orbit_aneesh_prompt',q);
+}
+async function creativeAsk(){
+  const q=document.getElementById('creativeAsk')?.value.trim();if(!q)return toast('Ask a creative question first.');
+  const out=document.getElementById('creativeAnswer');out.textContent='Orbit is thinking…';
+  try{
+    if(AUTH?.access_token){
+      const r=await fetch(SUPABASE_URL+'/functions/v1/orbit-ai',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,Authorization:'Bearer '+AUTH.access_token},body:JSON.stringify({message:q,workspace_id:ORBIT_WORKSPACE,context:'You are Aneesh Creative Coach for Prism of Stories. Give practical design and client-marketing advice. Focus on hooks, composition, typography, reels, creative testing, positioning, audience building and execution. Never invent client metrics.'})});
+      const data=await r.json();out.textContent=data.answer||data.message||'Orbit needs more detail.';
+    }else out.textContent='Sign in to Orbit for AI coaching. Meanwhile, use the prompt lab for structured creative experiments.';
+  }catch(e){out.textContent='Creative AI is temporarily unavailable. Your experiment is still safe locally.'}
+}
+function saveCreativeIdea(){
+  const q=document.getElementById('creativePrompt')?.value.trim();if(!q)return toast('Add an experiment first.');
+  const list=JSON.parse(localStorage.getItem('prism_orbit_aneesh_ideas')||'[]');list.unshift({idea:q,created:new Date().toISOString()});localStorage.setItem('prism_orbit_aneesh_ideas',JSON.stringify(list.slice(0,50)));toast('Creative experiment saved');
+}
+function generateCreativeBrief(){
+  const q=document.getElementById('creativePrompt')?.value.trim()||'new client campaign';
+  document.getElementById('creativeOutput').textContent='CREATIVE BRIEF\n\nObjective: '+q+'\nAudience: define the primary customer before designing.\nHook: one clear visual or verbal interruption in the first 1–2 seconds.\nMessage: one promise, one proof point, one CTA.\nAssets: hero visual + short reel + story variation + static retargeting asset.\nTesting: create 2–3 variations with one major variable changed at a time.\nReview: check brand consistency, readability on mobile and conversion path.';
+}
+function audiencePlan(){
+  document.getElementById('audienceOutput').textContent='ANEESH WEEKLY AUDIENCE LOOP\n\nMON — Share one design/marketing lesson.\nWED — Show a real creative breakdown or before/after.\nFRI — Publish an AI experiment and explain the thinking behind it.\nSUN — Share one client-marketing insight or mistake learned.\n\nEach post: strong hook → useful insight → visual proof → simple CTA. Track saves, shares, profile visits and qualified enquiries once real platform data is connected.';
+}
+
 function ai(){return '<div class="card hero"><div class="ey">Prism Intelligence</div><h2>Ask Orbit. Get a workflow.</h2><p>Orbit routes business questions into deterministic workflows. Real external actions require authorized integrations and human approval.</p><div class="grid g3" style="margin-top:15px">'+[['⌕','Research market','research'],['◎','Build campaign','marketing'],['↗','Create sales pack','sales'],['◇','Review clients','clients'],['✓','Plan execution','tasks'],['◈','Review finance','finance']].map(x=>'<div class="module" onclick="show(\''+x[2]+'\')"><div class="icon">'+x[0]+'</div><b>'+x[1]+'</b><div class="muted">Open workflow →</div></div>').join('')+'</div></div>'}
 function reports(){return '<div class="grid g4">'+card('Clients','<div class="metric p">2</div>')+card('Prospects','<div class="metric">'+S.leads.length+'</div>')+card('Tasks','<div class="metric">'+S.tasks.length+'</div>')+card('Studies','<div class="metric">'+S.studies.length+'</div>')+'</div><div class="grid g2" style="margin-top:12px">'+card('Executive summary','<div class="result">Prism Orbit combines client operations, market research, marketing planning, sales enablement, team execution and business intelligence. Live platform metrics require authorized integrations.</div>')+card('Integration roadmap','<div class="row">Supabase backend <span class="tag">Ready to connect</span></div><div class="row">Gmail / Calendar <span class="tag amber">Authorize</span></div><div class="row">Meta / Instagram <span class="tag amber">Authorize</span></div><div class="row">Research data sources <span class="tag amber">Connect</span></div></div>')+'</div>'}
 function notifications(){return '<div class="card"><b>Notifications</b><div class="row">Orbit research engine ready <span class="tag">AI</span></div><div class="row">Sales outreach requires human review <span class="tag amber">Approval</span></div><div class="row">Live social/ad metrics require authorization <span class="tag">Integration</span></div><div class="row">No external messages are sent automatically <span class="tag">Safety</span></div></div>'}
@@ -350,7 +395,7 @@ async function renderAutopilotData(){
   host.innerHTML=flows.map(f=>'<div class="module"><div style="display:flex;justify-content:space-between;gap:10px"><div><div class="ey">'+esc(f.trigger_type.replaceAll('_',' '))+'</div><b>'+esc(f.name)+'</b><div class="muted" style="margin-top:6px">'+esc(f.trigger_config?.description||'Orbit workflow')+'</div></div><button class="btn" onclick="toggleAutomation(\''+f.id+'\','+(!f.enabled)+')">'+(f.enabled?'Pause':'Activate')+'</button></div><div class="toolbar"><span class="tag">'+(f.enabled?'● Active':'○ Paused')+'</span><span class="tag">Approval protected</span></div></div>').join('');
 }
 
-const P={home,manager,research,marketing,sales,clients,projects,tasks,team,chat,growth,finance,accounts,ai,reports,notifications,settings,autopilot};
+const P={home,manager,research,marketing,sales,clients,projects,tasks,team,aneesh,chat,growth,finance,accounts,ai,reports,notifications,settings,autopilot};
 document.getElementById('nav').innerHTML=NAV.map(x=>'<button data-k="'+x[0]+'" onclick="show(\''+x[0]+'\')"><i>'+x[1]+'</i>'+x[2]+'</button>').join('');
 document.getElementById('bottom').innerHTML=NAV.slice(0,5).map(x=>'<button data-k="'+x[0]+'" onclick="show(\''+x[0]+'\')"><b>'+x[1]+'</b>'+x[2]+'</button>').join('');
 document.getElementById('pages').innerHTML='';
