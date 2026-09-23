@@ -1,0 +1,2 @@
+Orbit V2 deployment trigger — 2026-09-23
+Latest intended production commit: 111efe3d3c8417bf0a31d1f9a164fff3c45e843e
