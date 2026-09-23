@@ -5,6 +5,9 @@ const crypto = require('crypto');
 
 const port = Number(process.env.PORT) || 8080;
 const root = __dirname;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const MAX_LOGIN_ATTEMPTS = 10;
+const loginAttempts = new Map();
 
 const USERS = {
   'amalpradeep25@gmail.com': { name: 'Amalmenon', role: 'owner', hash: process.env.ORBIT_AMAL_PASSWORD_SHA256 || '' },
@@ -13,11 +16,24 @@ const USERS = {
 };
 const SESSION_SECRET = process.env.ORBIT_SESSION_SECRET || '';
 
+function securityHeaders() {
+  return {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), geolocation=()',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Resource-Policy': 'same-origin',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self' data: https:;"
+  };
+}
+
 function send(res, status, body, contentType = 'text/plain; charset=utf-8', extraHeaders = {}) {
   res.writeHead(status, Object.assign({
     'Content-Type': contentType,
     'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
-  }, extraHeaders));
+  }, securityHeaders(), extraHeaders));
   res.end(body);
 }
 
@@ -84,6 +100,42 @@ function readBody(req) {
   });
 }
 
+function loginKey(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function loginRateLimit(email) {
+  const key = loginKey(email);
+  const now = Date.now();
+  const existing = loginAttempts.get(key);
+  if (!existing || now - existing.firstAttempt >= LOGIN_WINDOW_MS) {
+    loginAttempts.set(key, { firstAttempt: now, attempts: 0 });
+    return { allowed: true, retryAfter: 0 };
+  }
+  if (existing.attempts >= MAX_LOGIN_ATTEMPTS) {
+    return {
+      allowed: false,
+      retryAfter: Math.ceil((LOGIN_WINDOW_MS - (now - existing.firstAttempt)) / 1000)
+    };
+  }
+  return { allowed: true, retryAfter: 0 };
+}
+
+function recordLoginFailure(email) {
+  const key = loginKey(email);
+  const now = Date.now();
+  const existing = loginAttempts.get(key);
+  if (!existing || now - existing.firstAttempt >= LOGIN_WINDOW_MS) {
+    loginAttempts.set(key, { firstAttempt: now, attempts: 1 });
+  } else {
+    existing.attempts += 1;
+  }
+}
+
+function clearLoginFailures(email) {
+  loginAttempts.delete(loginKey(email));
+}
+
 function serveIndex(req, res) {
   try {
     let html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
@@ -112,16 +164,29 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const email = (body.get('email') || '').trim().toLowerCase();
       const password = body.get('password') || '';
+      const limit = loginRateLimit(email);
+      if (!limit.allowed) {
+        return send(
+          res,
+          429,
+          JSON.stringify({ authenticated: false, error: 'Too many login attempts. Try again later.' }),
+          'application/json; charset=utf-8',
+          { 'Retry-After': String(limit.retryAfter) }
+        );
+      }
+
       const account = USERS[email];
       const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
 
       if (!account || !account.hash || passwordHash !== account.hash) {
+        recordLoginFailure(email);
         if ((req.headers.accept || '').includes('application/json')) {
           return send(res, 401, JSON.stringify({ authenticated: false }), 'application/json; charset=utf-8');
         }
         return send(res, 401, 'Invalid Orbit credentials. Please go back and try again.');
       }
 
+      clearLoginFailures(email);
       const token = createSession(email);
       const cookie = 'orbit_session=' + encodeURIComponent(token) + '; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax';
       if ((req.headers.accept || '').includes('application/json')) {
@@ -146,6 +211,16 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method !== 'GET') {
     return send(res, 405, 'Method Not Allowed', 'text/plain; charset=utf-8', { 'Allow': 'GET' });
+  }
+
+  if (requestPath === '/api/health') {
+    return send(res, 200, JSON.stringify({
+      status: 'ok',
+      service: 'prism-orbit',
+      version: '2026.09.23-hardening',
+      uptime_seconds: Math.floor(process.uptime()),
+      node: process.versions.node
+    }), 'application/json; charset=utf-8');
   }
 
   if (requestPath === '/api/session') {
