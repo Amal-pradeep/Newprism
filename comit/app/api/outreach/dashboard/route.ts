@@ -13,14 +13,16 @@ export async function GET(req:Request){
     const db=await requireAdminDb();
     const now=new Date();
     const sevenDays=new Date(now.getTime()+7*86400000);
-    const [{data:approvals,error:approvalError},{data:followups,error:followupError},{data:prospects,error:prospectError}]=await Promise.all([
+    const [{data:approvals,error:approvalError},{data:followups,error:followupError},{data:prospects,error:prospectError},{data:replies,error:replyError}]=await Promise.all([
       db.from("outreach_approvals").select("id,status,message_type,followup_id,to_email,subject,created_at,approved_at,gmail_message_id,gmail_thread_id,prospect_id,prospects(name,stage,score,metadata)").eq("organization_id",ORG_ID).order("created_at",{ascending:false}).limit(100),
       db.from("outreach_followups").select("id,prospect_id,source_approval_id,sequence_no,label,due_at,status,prepared_approval_id,completed_at,notes,prospects(name,stage,score,metadata)").eq("organization_id",ORG_ID).order("due_at",{ascending:true}).limit(100),
-      db.from("prospects").select("id,name,email,stage,score,metadata,updated_at").eq("organization_id",ORG_ID).order("score",{ascending:false}).limit(200)
+      db.from("prospects").select("id,name,email,stage,score,metadata,updated_at").eq("organization_id",ORG_ID).order("score",{ascending:false}).limit(200),
+      db.from("outreach_replies").select("id,prospect_id,approval_id,gmail_message_id,gmail_thread_id,sender_email,subject,snippet,received_at,classification,prospects(name,stage,score,metadata)").eq("organization_id",ORG_ID).order("received_at",{ascending:false}).limit(50)
     ]);
     if(approvalError)throw approvalError;
     if(followupError)throw followupError;
     if(prospectError)throw prospectError;
+    if(replyError)throw replyError;
     const list=approvals||[], f=list.length?followups||[]:followups||[], p=prospects||[];
     const initialSent=list.filter((x:any)=>x.status==="sent"&&(x.message_type||"initial")==="initial");
     const sent=list.filter((x:any)=>x.status==="sent");
@@ -30,15 +32,18 @@ export async function GET(req:Request){
     const meetings=p.filter((x:any)=>x.stage==="meeting").length;
     const won=p.filter((x:any)=>x.stage==="won").length;
     const lost=p.filter((x:any)=>x.stage==="lost").length;
+    const replyRows=replies||[];
     const restaurantSent=initialSent.filter((x:any)=>/restaurant|hospitality|cafe|f&b|food/.test(String(x.prospects?.metadata?.industry||"").toLowerCase())).length;
+    const actualReplies=replyRows.length;
+    const unreadReplies=replyRows.filter((x:any)=>true).length;
     const due=f.filter((x:any)=>x.status==="pending"&&new Date(x.due_at)<=now);
     const upcoming=f.filter((x:any)=>x.status==="pending"&&new Date(x.due_at)>now&&new Date(x.due_at)<=sevenDays);
     return NextResponse.json({ok:true,user,metrics:{
       prospects:p.length,emailReady:p.filter((x:any)=>x.email).length,sent:initialSent.length,totalSent:sent.length,pending,failed:failed.length,replied,meetings,won,lost,restaurantSent,
-      replyRate:initialSent.length?Number(((replied/initialSent.length)*100).toFixed(1)):0,
+      replyRate:initialSent.length?Number(((actualReplies/initialSent.length)*100).toFixed(1)):0,
       meetingRate:initialSent.length?Number(((meetings/initialSent.length)*100).toFixed(1)):0,
-      dueFollowups:due.length,upcomingFollowups:upcoming.length
-    },recent:sent.slice(0,20),followups:f.slice(0,50),topTargets:p.slice(0,12)});
+      dueFollowups:due.length,upcomingFollowups:upcoming.length,actualReplies,unreadReplies
+    },recent:sent.slice(0,20),replies:replyRows.slice(0,25),followups:f.slice(0,50),topTargets:p.slice(0,12)});
   }catch(error:any){return NextResponse.json({ok:false,error:error?.message||"Failed to load outreach dashboard"},{status:500})}
 }
 
