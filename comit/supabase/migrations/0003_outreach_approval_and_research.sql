@@ -30,11 +30,10 @@ create table if not exists public.prospect_research (
 create index if not exists idx_outreach_approvals_org_status on public.outreach_approvals(organization_id,status,created_at desc);
 create index if not exists idx_outreach_approvals_prospect on public.outreach_approvals(prospect_id);
 create index if not exists idx_prospect_research_prospect on public.prospect_research(prospect_id);
+create index if not exists idx_prospect_research_org on public.prospect_research(organization_id);
 
 alter table public.outreach_approvals enable row level security;
 alter table public.prospect_research enable row level security;
 
-create policy "comit members read outreach approvals" on public.outreach_approvals for select using (public.comit_is_org_member(organization_id));
-create policy "comit members manage outreach approvals" on public.outreach_approvals for all using (public.comit_is_org_member(organization_id)) with check (public.comit_is_org_member(organization_id));
-create policy "comit members read prospect research" on public.prospect_research for select using (public.comit_is_org_member(organization_id));
-create policy "comit members manage prospect research" on public.prospect_research for all using (public.comit_is_org_member(organization_id)) with check (public.comit_is_org_member(organization_id));
+create policy "comit members access outreach approvals" on public.outreach_approvals for all using (public.comit_is_org_member(organization_id)) with check (public.comit_is_org_member(organization_id));
+create policy "comit members access prospect research" on public.prospect_research for all using (public.comit_is_org_member(organization_id)) with check (public.comit_is_org_member(organization_id));
