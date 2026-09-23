@@ -1,33 +1,152 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const port = Number(process.env.PORT) || 8080;
 const root = __dirname;
 
+const USERS = {
+  'amalpradeep25@gmail.com': { name: 'Amal', role: 'owner', hash: process.env.ORBIT_AMAL_PASSWORD_SHA256 || '' },
+  'aadil.sudhir279@gmail.com': { name: 'Adhil', role: 'partner', hash: process.env.ORBIT_ADHIL_PASSWORD_SHA256 || '' },
+  'msaneeshnath@gmail.com': { name: 'Aneesh', role: 'design', hash: process.env.ORBIT_ANEESH_PASSWORD_SHA256 || '' }
+};
+const SESSION_SECRET = process.env.ORBIT_SESSION_SECRET || '';
+
+function send(res, status, body, contentType = 'text/plain; charset=utf-8', extraHeaders = {}) {
+  res.writeHead(status, Object.assign({
+    'Content-Type': contentType,
+    'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
+  }, extraHeaders));
+  res.end(body);
+}
+
 function sendFile(res, filePath, contentType) {
   try {
     const body = fs.readFileSync(filePath);
-    res.writeHead(200, {
-      'Content-Type': contentType,
-      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
-    });
-    res.end(body);
+    send(res, 200, body, contentType);
   } catch (error) {
-    res.writeHead(404, {'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'});
-    res.end('Not Found');
+    send(res, 404, 'Not Found');
   }
 }
 
-const server = http.createServer((req, res) => {
+function parseCookies(req) {
+  const out = {};
+  const raw = req.headers.cookie || '';
+  raw.split(';').forEach(part => {
+    const i = part.indexOf('=');
+    if (i > -1) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+  });
+  return out;
+}
+
+function sign(value) {
+  return crypto.createHmac('sha256', SESSION_SECRET).update(value).digest('base64url');
+}
+
+function createSession(email) {
+  const payload = Buffer.from(JSON.stringify({
+    email,
+    exp: Date.now() + 1000 * 60 * 60 * 24 * 30
+  })).toString('base64url');
+  return payload + '.' + sign(payload);
+}
+
+function readSession(req) {
+  if (!SESSION_SECRET) return null;
+  const token = parseCookies(req).orbit_session;
+  if (!token) return null;
+  const [payload, signature] = token.split('.');
+  if (!payload || !signature) return null;
+  const expected = sign(payload);
+  if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (!data.email || !USERS[data.email] || !data.exp || data.exp < Date.now()) return null;
+    return { email: data.email, ...USERS[data.email] };
+  } catch {
+    return null;
+  }
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
+      if (body.length > 10000) {
+        reject(new Error('Request too large'));
+        req.destroy();
+      }
+    });
+    req.on('end', () => resolve(new URLSearchParams(body)));
+    req.on('error', reject);
+  });
+}
+
+function serveIndex(req, res) {
+  try {
+    let html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    const session = readSession(req);
+    if (session) {
+      const safe = JSON.stringify({
+        email: session.email,
+        name: session.name,
+        role: session.role
+      }).replace(/</g, '\\u003c');
+      html = html.replace('<head>', '<head><script>window.__ORBIT_SERVER_AUTH=' + safe + ';</script>');
+      html = html.replace('<div id="authGate">', '<div id="authGate" style="display:none">');
+    }
+    send(res, 200, html, 'text/html; charset=utf-8');
+  } catch (error) {
+    console.error('index.html error', error);
+    send(res, 500, 'Orbit failed to load.');
+  }
+}
+
+const server = http.createServer(async (req, res) => {
   const requestPath = decodeURIComponent((req.url || '/').split('?')[0]);
 
-  if (req.method !== 'GET') {
-    res.writeHead(405, {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Allow': 'GET'
+  if (req.method === 'POST' && requestPath === '/api/login') {
+    try {
+      const body = await readBody(req);
+      const email = (body.get('email') || '').trim().toLowerCase();
+      const password = body.get('password') || '';
+      const account = USERS[email];
+      const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+
+      if (!account || !account.hash || passwordHash !== account.hash) {
+        return send(res, 401, 'Invalid Orbit credentials. Please go back and try again.');
+      }
+
+      const token = createSession(email);
+      return send(res, 303, '', 'text/plain; charset=utf-8', {
+        'Location': '/',
+        'Set-Cookie': 'orbit_session=' + encodeURIComponent(token) + '; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax'
+      });
+    } catch (error) {
+      console.error('login error', error);
+      return send(res, 400, 'Orbit login request could not be processed.');
+    }
+  }
+
+  if (req.method === 'POST' && requestPath === '/api/logout') {
+    return send(res, 303, '', 'text/plain; charset=utf-8', {
+      'Location': '/',
+      'Set-Cookie': 'orbit_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax'
     });
-    return res.end('Method Not Allowed');
+  }
+
+  if (req.method !== 'GET') {
+    return send(res, 405, 'Method Not Allowed', 'text/plain; charset=utf-8', { 'Allow': 'GET' });
+  }
+
+  if (requestPath === '/api/session') {
+    const session = readSession(req);
+    return send(res, 200, JSON.stringify(session ? {
+      authenticated: true,
+      user: { email: session.email, name: session.name, role: session.role }
+    } : { authenticated: false }), 'application/json; charset=utf-8');
   }
 
   if (requestPath === '/manifest.webmanifest') {
@@ -43,7 +162,7 @@ const server = http.createServer((req, res) => {
     return sendFile(res, path.join(root, 'favicon.ico'), 'image/x-icon');
   }
 
-  return sendFile(res, path.join(root, 'index.html'), 'text/html; charset=utf-8');
+  return serveIndex(req, res);
 });
 
 server.listen(port, '0.0.0.0', () => {
