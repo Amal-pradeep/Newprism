@@ -66,7 +66,7 @@ function safeBoot(){
 }
 const KEY='prism_orbit_v10';
 const NAV=[
-['home','⌂','Command Center'],['research','⌕','Research Intelligence'],['marketing','◎','Marketing AI'],['sales','↗','Sales AI'],['clients','◇','Clients'],['projects','▣','Projects'],['tasks','✓','Tasks'],['team','◉','Team'],['chat','☏','Prism Chat'],['growth','✦','Growth'],['finance','◈','Finance'],['ai','✧','Orbit AI'],['autopilot','⚡','Orbit Autopilot'],['reports','▤','Reports'],['notifications','🔔','Notifications'],['settings','⚙','Settings']
+['home','⌂','Command Center'],['manager','♛','Amal’s Manager'],['research','⌕','Research Intelligence'],['marketing','◎','Marketing AI'],['sales','↗','Sales AI'],['clients','◇','Clients'],['projects','▣','Projects'],['tasks','✓','Tasks'],['team','◉','Team'],['chat','☏','Prism Chat'],['growth','✦','Growth'],['finance','◈','Finance'],['ai','✧','Orbit AI'],['autopilot','⚡','Orbit Autopilot'],['reports','▤','Reports'],['notifications','🔔','Notifications'],['settings','⚙','Settings']
 ];
 const DEFAULT_STATE={
 tasks:[['Review Nostaza campaign','High','Today'],['Prepare Dubai hospitality prospects','High','Open'],['Aneesh — restaurant reel','Creative','Open'],['Satheesh — Lunes AI automation','Technical','Open']],
@@ -169,6 +169,49 @@ function ai(){return '<div class="card hero"><div class="ey">Prism Intelligence<
 function reports(){return '<div class="grid g4">'+card('Clients','<div class="metric p">2</div>')+card('Prospects','<div class="metric">'+S.leads.length+'</div>')+card('Tasks','<div class="metric">'+S.tasks.length+'</div>')+card('Studies','<div class="metric">'+S.studies.length+'</div>')+'</div><div class="grid g2" style="margin-top:12px">'+card('Executive summary','<div class="result">Prism Orbit combines client operations, market research, marketing planning, sales enablement, team execution and business intelligence. Live platform metrics require authorized integrations.</div>')+card('Integration roadmap','<div class="row">Supabase backend <span class="tag">Ready to connect</span></div><div class="row">Gmail / Calendar <span class="tag amber">Authorize</span></div><div class="row">Meta / Instagram <span class="tag amber">Authorize</span></div><div class="row">Research data sources <span class="tag amber">Connect</span></div></div>')+'</div>'}
 function notifications(){return '<div class="card"><b>Notifications</b><div class="row">Orbit research engine ready <span class="tag">AI</span></div><div class="row">Sales outreach requires human review <span class="tag amber">Approval</span></div><div class="row">Live social/ad metrics require authorization <span class="tag">Integration</span></div><div class="row">No external messages are sent automatically <span class="tag">Safety</span></div></div>'}
 function settings(){return '<div class="grid g2">'+card('Workspace & privacy','<div class="row">Business workspace <span class="tag">Prism</span></div><div class="row">Partner roles <span class="tag">Amal · Adhil</span></div><div class="row">Specialists <span class="tag">Aneesh · Satheesh</span></div><div class="row">External actions <span class="tag amber">Approval required</span></div><button class="btn" onclick="resetAll()">Reset local workspace</button>')+card('Integrations','<div class="row">Supabase <span class="tag">Backend ready</span></div><div class="row">Gmail / Calendar <span class="tag amber">Authorize</span></div><div class="row">Meta / Instagram <span class="tag amber">Authorize</span></div><div class="row">WhatsApp Business API <span class="tag amber">Separate authorization</span></div><div class="row">Research sources <span class="tag amber">Connect</span></div>')+'</div>'}
+
+function manager(){
+  const open=S.tasks.filter(t=>t[2]!=='Done').length;
+  const leads=S.leads.length;
+  return '<div class="card hero" style="min-height:320px;background:radial-gradient(circle at 80% 25%,#8b5cf622,transparent 35%),linear-gradient(145deg,#ffffff0d,#ffffff03)">'+
+  '<div class="ey">AMAL\'S PRIVATE MANAGEMENT LAYER</div>'+
+  '<h2>Amal’s Manager is watching the business.</h2>'+
+  '<p>This is your private executive layer inside Prism Orbit. It turns your priorities, team workload, prospects, client attention and follow-ups into a clear daily operating plan. It can recommend actions, but external messages and irreversible actions remain approval-gated.</p>'+
+  '<div class="toolbar"><button class="btn ai" onclick="managerBrief()">Generate today\'s executive brief</button><button class="btn primary" onclick="managerFocus()">Set my top priority</button><button class="btn" onclick="show(\'autopilot\')">Open Autopilot</button></div></div>'+
+  '<div class="grid g4" style="margin-top:12px">'+
+  card('Open work','<div class="metric p">'+open+'</div><div class="muted">Tasks still needing movement.</div>')+
+  card('Prospects','<div class="metric">'+leads+'</div><div class="muted">Accounts in your sales pipeline.</div>')+
+  card('Team','<div class="metric">4</div><div class="muted">Partner + specialist operating layer.</div>')+
+  card('Approval gate','<div class="metric">ON</div><div class="muted">No cold email or external action without approval.</div>')+
+  '</div>'+
+  '<div class="grid g2" style="margin-top:12px">'+
+  '<div class="card"><div class="ey">EXECUTIVE PRIORITIES</div><h2 style="margin:6px 0">What I would put in front of you</h2>'+
+  '<div class="row"><span><b>1 · Revenue</b><small class="muted" style="display:block">Move hospitality prospects toward meetings and Lunes-powered offers.</small></span><button class="btn" onclick="show(\'sales\')">Open</button></div>'+
+  '<div class="row"><span><b>2 · Client growth</b><small class="muted" style="display:block">Review Nostaza and Al Eliza for measurable expansion opportunities.</small></span><button class="btn" onclick="show(\'clients\')">Open</button></div>'+
+  '<div class="row"><span><b>3 · Execution</b><small class="muted" style="display:block">Keep Aneesh and Satheesh unblocked with clear owners and deadlines.</small></span><button class="btn" onclick="show(\'tasks\')">Open</button></div>'+
+  '</div>'+
+  '<div class="card"><div class="ey">MANAGER CONTROLS</div><h2 style="margin:6px 0">Your operating rules</h2>'+
+  '<div class="row">Protect personal/private data <span class="tag">ON</span></div>'+
+  '<div class="row">Human approval for external actions <span class="tag">ON</span></div>'+
+  '<div class="row">Never invent live business metrics <span class="tag">ON</span></div>'+
+  '<div class="row">Escalate overdue/high-impact work <span class="tag amber">ON</span></div>'+
+  '<div class="row">Lunes AI as automation layer <span class="tag">READY</span></div>'+
+  '</div></div>'+
+  '<div id="managerBrief" class="card" style="margin-top:12px"><div class="ey">MANAGER BRIEF</div><div class="result">No executive brief generated yet. Tap “Generate today\'s executive brief” and Orbit will turn your current workspace into a concise action list.</div></div>';
+}
+function managerBrief(){
+  const urgent=S.tasks.filter(t=>t[1]==='High'&&t[2]!=='Done').map(t=>t[0]);
+  const text='AMAL\'S EXECUTIVE BRIEF\\n\\nFOCUS\\nRevenue first: progress hospitality prospects and turn Lunes AI into a concrete business automation offer.\\n\\nCLIENT ATTENTION\\nReview Nostaza and Al Eliza for the next measurable growth action.\\n\\nTEAM\\nKeep Aneesh focused on creative delivery and Satheesh focused on automation/development.\\n\\nOPEN HIGH-PRIORITY WORK\\n'+(urgent.length?urgent.map(x=>'• '+x).join('\\n'):'• No high-priority open tasks recorded.')+'\\n\\nNEXT 3 MOVES\\n1. Choose the single revenue action that must happen today.\\n2. Assign one concrete deliverable to the right specialist.\\n3. Approve only the external actions that have evidence and a clear business purpose.';
+  const e=document.getElementById('managerBrief');if(e)e.innerHTML='<div class="ey">MANAGER BRIEF</div><div class="result">'+esc(text)+'</div><div class="toolbar"><button class="btn" onclick="navigator.clipboard?.writeText('+JSON.stringify(text)+');toast(\'Brief copied\')">Copy</button><button class="btn primary" onclick="addTask(\'Execute Amal Manager priority: revenue action\')">Turn into task</button></div>';
+}
+function managerFocus(){
+  const x=prompt('What is the ONE outcome you want to achieve today?');
+  if(!x)return;
+  localStorage.setItem('prism_orbit_manager_focus',x.trim());
+  addTask('Amal Manager focus: '+x.trim());
+  toast('Manager focus saved');
+}
+
 function openVoice(){if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){toast('Voice recognition is not supported in this browser.');return}const R=window.SpeechRecognition||window.webkitSpeechRecognition,r=new R();r.lang='en-IN';r.interimResults=false;r.onstart=()=>toast('Orbit listening…');r.onerror=()=>toast('Voice input stopped');r.onresult=e=>{const q=e.results[0][0].transcript;toast('Heard: '+q);document.getElementById('cmd')&&(document.getElementById('cmd').value=q);command()};r.start()}function closeModal(){document.getElementById('modal').classList.remove('on')}\nfunction copyOut(){if(window.out)navigator.clipboard?.writeText(window.out);toast('Copied to clipboard')}
 function resetAll(){if(confirm('Reset Prism Orbit local workspace data?')){localStorage.removeItem(KEY);location.reload()}}
 function searchAll(q){if(!q)return;const x=q.toLowerCase();const found=NAV.find(n=>n[2].toLowerCase().includes(x));if(found)show(found[0])}
@@ -227,7 +270,7 @@ async function renderAutopilotData(){
   host.innerHTML=flows.map(f=>'<div class="module"><div style="display:flex;justify-content:space-between;gap:10px"><div><div class="ey">'+esc(f.trigger_type.replaceAll('_',' '))+'</div><b>'+esc(f.name)+'</b><div class="muted" style="margin-top:6px">'+esc(f.trigger_config?.description||'Orbit workflow')+'</div></div><button class="btn" onclick="toggleAutomation(\''+f.id+'\','+(!f.enabled)+')">'+(f.enabled?'Pause':'Activate')+'</button></div><div class="toolbar"><span class="tag">'+(f.enabled?'● Active':'○ Paused')+'</span><span class="tag">Approval protected</span></div></div>').join('');
 }
 
-const P={home,research,marketing,sales,clients,projects,tasks,team,chat,growth,finance,ai,reports,notifications ,settings,autopilot};
+const P={home,manager,research,marketing,sales,clients,projects,tasks,team,chat,growth,finance,ai,reports,notifications ,settings,autopilot};
 document.getElementById('nav').innerHTML=NAV.map(x=>'<button data-k="'+x[0]+'" onclick="show(\''+x[0]+'\')"><i>'+x[1]+'</i>'+x[2]+'</button>').join('');
 document.getElementById('bottom').innerHTML=NAV.slice(0,5).map(x=>'<button data-k="'+x[0]+'" onclick="show(\''+x[0]+'\')"><b>'+x[1]+'</b>'+x[2]+'</button>').join('');
 document.getElementById('pages').innerHTML='';
