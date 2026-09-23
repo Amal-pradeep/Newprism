@@ -140,7 +140,7 @@ function serveIndex(req, res) {
   try {
     let html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     const outreachScript = fs.readFileSync(path.join(root, 'outreach.js'), 'utf8');
-    html = html.replace('</body>', '<script>' + outreachScript.replace(/<\\/script/gi, '<\\\\/script') + '</script></body>');
+    html = html.replace('</body>', '<script>' + outreachScript.replaceAll('</script', '<\\/script') + '</script></body>');
     const session = readSession(req);
     if (session) {
       const safe = JSON.stringify({
