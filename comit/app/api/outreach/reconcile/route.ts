@@ -77,8 +77,8 @@ async function reconcile(){
   }));
 
   const existingIds=new Set<string>();
-  for(const id of uniqueMessageIds.slice(0,200)){
-    const {data}=await db.from("outreach_replies").select("gmail_message_id").eq("gmail_message_id",id);
+  if(uniqueMessageIds.length){
+    const {data}=await db.from("outreach_replies").select("gmail_message_id").in("gmail_message_id",uniqueMessageIds);
     for(const row of data||[])existingIds.add(row.gmail_message_id);
   }
 
@@ -89,7 +89,12 @@ async function reconcile(){
     const prospect=byEmail.get(sender);
     if(!prospect){ignored++;continue}
 
-    const approval=sentApprovals.find(a=>a.prospect_id===prospect.id && ((a.gmail_thread_id&&a.gmail_thread_id===msg.threadId)||normalizeSubject(a.subject)===normalizeSubject(subject))) || bySubject.get(normalizeSubject(subject))?.find(a=>a.prospect_id===prospect.id);
+    const references=(headers.get("references")||"")+" "+(headers.get("in-reply-to")||"");
+    const approval=sentApprovals.find(a=>a.prospect_id===prospect.id && (
+      (a.gmail_thread_id&&a.gmail_thread_id===msg.threadId) ||
+      (a.gmail_message_id&&references.includes(a.gmail_message_id)) ||
+      normalizeSubject(a.subject)===normalizeSubject(subject)
+    )) || bySubject.get(normalizeSubject(subject))?.find(a=>a.prospect_id===prospect.id);
     if(!approval){ignored++;continue}
 
     matched++;
@@ -135,7 +140,8 @@ async function reconcile(){
       if(!["meeting","won","lost"].includes(String(prospect?.stage)))update.stage="replied";
       await db.from("prospects").update(update).eq("id",prospectId).eq("organization_id",ORG_ID);
       await db.from("outreach_followups").update({status:"skipped",updated_at:new Date().toISOString(),notes:"Automatic Gmail reply detected; follow-up cadence stopped."}).eq("prospect_id",prospectId).eq("status","pending");
-      await db.from("notifications").insert({organization_id:ORG_ID,user_id:null,type:"outreach_reply",title:"New outreach reply",body:`Reply received from ${byEmail.get(String((await db.from("prospects").select("name").eq("id",prospectId).single()).data?.name||"prospect").trim().toLowerCase())?.name||"prospect"}`,metadata:{prospect_id:prospectId,subject:u.last_reply_subject,received_at:u.last_reply_at}});
+      const prospectName=(prospectList.find(p=>p.id===prospectId)?.name)||"prospect";
+      await db.from("notifications").insert({organization_id:ORG_ID,user_id:null,type:"outreach_reply",title:"New outreach reply",body:`Reply received from ${prospectName}`,metadata:{prospect_id:prospectId,subject:u.last_reply_subject,received_at:u.last_reply_at}});
     }
   }
 
