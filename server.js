@@ -116,13 +116,20 @@ const server = http.createServer(async (req, res) => {
       const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
 
       if (!account || !account.hash || passwordHash !== account.hash) {
+        if ((req.headers.accept || '').includes('application/json')) {
+          return send(res, 401, JSON.stringify({ authenticated: false }), 'application/json; charset=utf-8');
+        }
         return send(res, 401, 'Invalid Orbit credentials. Please go back and try again.');
       }
 
       const token = createSession(email);
+      const cookie = 'orbit_session=' + encodeURIComponent(token) + '; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax';
+      if ((req.headers.accept || '').includes('application/json')) {
+        return send(res, 200, JSON.stringify({ authenticated: true }), 'application/json; charset=utf-8', { 'Set-Cookie': cookie });
+      }
       return send(res, 303, '', 'text/plain; charset=utf-8', {
         'Location': '/',
-        'Set-Cookie': 'orbit_session=' + encodeURIComponent(token) + '; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax'
+        'Set-Cookie': cookie
       });
     } catch (error) {
       console.error('login error', error);
