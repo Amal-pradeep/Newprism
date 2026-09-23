@@ -19,7 +19,7 @@ function request(p,headers={}){return new Promise((resolve,reject)=>{const req=h
   const h=JSON.parse(health.body); assert.equal(h.status,'ok'); assert.equal(h.service,'prism-orbit');
   const session=await request('/api/session'); assert.equal(session.status,200); assert.equal(JSON.parse(session.body).authenticated,false);
   const knowledge=await request('/api/knowledge'); assert.equal(knowledge.status,401,'knowledge must require auth');
-  const html=await request('/'); assert.equal(html.status,200); assert.match(html.body,/Command Center/);
+  const html=await request('/'); assert.equal(html.status,200); assert.match(html.body,/Command Center/); assert.match(html.body,/orbit-v2|ORBIT \\u00b7 VERSION 2/i);
   console.log('Orbit smoke tests passed');
  }catch(e){console.error('Orbit smoke test failed:',e.message);console.error(output);process.exitCode=1}
  finally{child.kill('SIGTERM')}
