@@ -176,7 +176,8 @@ function serveIndex(req, res) {
   try {
     let html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     const outreachScript = fs.readFileSync(path.join(root, 'outreach.js'), 'utf8');
-    html = html.replace('</body>', '<script>' + outreachScript.replaceAll('</script', '<\\/script') + '</script></body>');
+    const monitoringScript = fs.readFileSync(path.join(root, 'monitoring.js'), 'utf8');
+    html = html.replace('</body>', '<script>' + outreachScript.replaceAll('</script', '<\\/script') + '</script><script>' + monitoringScript.replaceAll('</script', '<\\/script') + '</script></body>');
     const session = readSession(req);
     if (session) {
       const safe = JSON.stringify({ email: session.email, name: session.name, role: session.role }).replace(/</g, '\\u003c');
