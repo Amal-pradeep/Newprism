@@ -1,6 +1,7 @@
 import {NextResponse} from "next/server";
 import {getSessionUser} from "@/lib/outreach";
-const agents=[\n{id:"win-strategy",name:"Win Strategy Agent",owner:"Amal",goal:"Convert research into a deal-specific path: trigger → pain hypothesis → proof → stakeholders → discovery → objection handling → next commitment.",triggers:["qualified account","proposal stage","stalled deal","no response"],outputs:["win score","research gaps","discovery plan","proof plan","close question"]},
+const agents=[
+{id:"win-strategy",name:"Win Strategy Agent",owner:"Amal",goal:"Convert research into a deal-specific path: trigger → pain hypothesis → proof → stakeholders → discovery → objection handling → next commitment.",triggers:["qualified account","proposal stage","stalled deal","no response"],outputs:["win score","research gaps","discovery plan","proof plan","close question"]},
 {id:"prospect-research",name:"Prospect Research Agent",owner:"Aadil",goal:"Find, qualify and evidence new prospects.",triggers:["new prospect","daily research","buying signal"] ,outputs:["fit","trigger","pain hypothesis","stakeholders","proof plan","next action"]},
 {id:"outreach",name:"Outreach Agent",owner:"Amal",goal:"Turn researched accounts into approval-gated personalized outreach and follow-up sequences.",triggers:["qualified prospect","follow-up due","no response"] ,outputs:["message","objection hypothesis","follow-up","close question"]},
 {id:"creative",name:"Creative Agency Agent",owner:"Aneesh",goal:"Turn client goals into poster, carousel and reel briefs.",triggers:["content request","campaign launch"]},
