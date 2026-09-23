@@ -104,8 +104,10 @@ export async function POST(req: Request) {
 
     if (action === "reject") {
       if (!approvalId) return NextResponse.json({ ok: false, error: "approvalId is required." }, { status: 400 });
-      const { error } = await db.from("outreach_approvals").update({ status: "rejected", approved_by: user.email, approved_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", approvalId).eq("status", "pending");
+      const rejectedAt = new Date().toISOString();
+      const { data:approval, error } = await db.from("outreach_approvals").update({ status: "rejected", approved_by: user.email, approved_at: rejectedAt, updated_at: rejectedAt }).eq("id", approvalId).eq("status", "pending").select("followup_id").single();
       if (error) throw error;
+      if (approval?.followup_id) await db.from("outreach_followups").update({ status: "pending", prepared_approval_id: null, updated_at: rejectedAt }).eq("id", approval.followup_id);
       return NextResponse.json({ ok: true, status: "rejected" });
     }
 
