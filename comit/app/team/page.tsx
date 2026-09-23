@@ -7,7 +7,11 @@ type TeamMember = {
   role: string;
   focus: string;
   avatar: string;
-  tasks: { title: string; priority: "High"|"Medium"|"Low"; due: string; aiReason: string }[];
+  tasks: { title: string; priority: "High"|"Medium"|"Low"; due: string; aiReason: string }[  {name:"Aneesh",role:"Team Operations",focus:"Execution, coordination & delivery",avatar:"AN",
+   tasks:[
+    {title:"Review today's assigned operations",priority:"High",due:"Today",aiReason:"AI prioritized tasks from current workload."},
+    {title:"Update execution status",priority:"Medium",due:"Today",aiReason:"Keeps COMIT's team intelligence current."},
+    {title:"Clear pending coordination items",priority:"Medium",due:"Tomorrow",aiReason:"AI grouped dependent tasks together."}]},\n];
 };
 
 const seed: TeamMember[] = [
@@ -21,7 +25,7 @@ const seed: TeamMember[] = [
     {title:"Follow up with qualified prospects",priority:"High",due:"Today",aiReason:"Reply likelihood is elevated."},
     {title:"Research new UAE opportunities",priority:"Medium",due:"Today",aiReason:"AI found new matching companies."},
     {title:"Update meeting outcomes",priority:"Low",due:"Tomorrow",aiReason:"Keeps CRM intelligence current."}]},
-  {name:"Saneesh",role:"Design & Creative",focus:"Creative production & brand systems",avatar:"SN",
+  {name:"Jishnu",role:"Design & Creative",focus:"Creative production & brand systems",avatar:"JS",
    tasks:[
     {title:"Finish priority client creatives",priority:"High",due:"Today",aiReason:"Client deadline is approaching."},
     {title:"Prepare next content batch",priority:"Medium",due:"Tomorrow",aiReason:"Content engine detected a gap."},
