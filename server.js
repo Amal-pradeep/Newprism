@@ -8,7 +8,7 @@ const root = __dirname;
 
 const USERS = {
   'amalpradeep25@gmail.com': { name: 'Amalmenon', role: 'owner', hash: process.env.ORBIT_AMAL_PASSWORD_SHA256 || '' },
-  'aadil.sudhir279@gmail.com': { name: 'Aadil', role: 'partner', hash: process.env.ORBIT_ADHIL_PASSWORD_SHA256 || '' },
+  'aadil.sudhir279@gmail.com': { name: 'Aadil', role: 'partner', hash: process.env.ORBIT_AADIL_PASSWORD_SHA256 || '' },
   'msaneeshnath@gmail.com': { name: 'Aneesh', role: 'design', hash: process.env.ORBIT_ANEESH_PASSWORD_SHA256 || '' }
 };
 const SESSION_SECRET = process.env.ORBIT_SESSION_SECRET || '';
