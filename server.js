@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+// Orbit production hotfix: keep inline outreach injection syntax-safe for Node 20.
+
 const port = Number(process.env.PORT) || 8080;
 const root = __dirname;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
@@ -113,10 +115,7 @@ function loginRateLimit(email) {
     return { allowed: true, retryAfter: 0 };
   }
   if (existing.attempts >= MAX_LOGIN_ATTEMPTS) {
-    return {
-      allowed: false,
-      retryAfter: Math.ceil((LOGIN_WINDOW_MS - (now - existing.firstAttempt)) / 1000)
-    };
+    return { allowed: false, retryAfter: Math.ceil((LOGIN_WINDOW_MS - (now - existing.firstAttempt)) / 1000) };
   }
   return { allowed: true, retryAfter: 0 };
 }
@@ -125,16 +124,11 @@ function recordLoginFailure(email) {
   const key = loginKey(email);
   const now = Date.now();
   const existing = loginAttempts.get(key);
-  if (!existing || now - existing.firstAttempt >= LOGIN_WINDOW_MS) {
-    loginAttempts.set(key, { firstAttempt: now, attempts: 1 });
-  } else {
-    existing.attempts += 1;
-  }
+  if (!existing || now - existing.firstAttempt >= LOGIN_WINDOW_MS) loginAttempts.set(key, { firstAttempt: now, attempts: 1 });
+  else existing.attempts += 1;
 }
 
-function clearLoginFailures(email) {
-  loginAttempts.delete(loginKey(email));
-}
+function clearLoginFailures(email) { loginAttempts.delete(loginKey(email)); }
 
 function serveIndex(req, res) {
   try {
@@ -143,11 +137,7 @@ function serveIndex(req, res) {
     html = html.replace('</body>', '<script>' + outreachScript.replaceAll('</script', '<\\/script') + '</script></body>');
     const session = readSession(req);
     if (session) {
-      const safe = JSON.stringify({
-        email: session.email,
-        name: session.name,
-        role: session.role
-      }).replace(/</g, '\\u003c');
+      const safe = JSON.stringify({ email: session.email, name: session.name, role: session.role }).replace(/</g, '\\u003c');
       html = html.replace('<head>', '<head><script>window.__ORBIT_SERVER_AUTH=' + safe + ';</script>');
       html = html.replace('<div id="authGate">', '<div id="authGate" style="display:none">');
     }
@@ -167,88 +157,38 @@ const server = http.createServer(async (req, res) => {
       const email = (body.get('email') || '').trim().toLowerCase();
       const password = body.get('password') || '';
       const limit = loginRateLimit(email);
-      if (!limit.allowed) {
-        return send(
-          res,
-          429,
-          JSON.stringify({ authenticated: false, error: 'Too many login attempts. Try again later.' }),
-          'application/json; charset=utf-8',
-          { 'Retry-After': String(limit.retryAfter) }
-        );
-      }
-
+      if (!limit.allowed) return send(res, 429, JSON.stringify({ authenticated: false, error: 'Too many login attempts. Try again later.' }), 'application/json; charset=utf-8', { 'Retry-After': String(limit.retryAfter) });
       const account = USERS[email];
       const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
-
       if (!account || !account.hash || passwordHash !== account.hash) {
         recordLoginFailure(email);
-        if ((req.headers.accept || '').includes('application/json')) {
-          return send(res, 401, JSON.stringify({ authenticated: false }), 'application/json; charset=utf-8');
-        }
+        if ((req.headers.accept || '').includes('application/json')) return send(res, 401, JSON.stringify({ authenticated: false }), 'application/json; charset=utf-8');
         return send(res, 401, 'Invalid Orbit credentials. Please go back and try again.');
       }
-
       clearLoginFailures(email);
       const token = createSession(email);
       const cookie = 'orbit_session=' + encodeURIComponent(token) + '; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax';
-      if ((req.headers.accept || '').includes('application/json')) {
-        return send(res, 200, JSON.stringify({ authenticated: true }), 'application/json; charset=utf-8', { 'Set-Cookie': cookie });
-      }
-      return send(res, 303, '', 'text/plain; charset=utf-8', {
-        'Location': '/',
-        'Set-Cookie': cookie
-      });
+      if ((req.headers.accept || '').includes('application/json')) return send(res, 200, JSON.stringify({ authenticated: true }), 'application/json; charset=utf-8', { 'Set-Cookie': cookie });
+      return send(res, 303, '', 'text/plain; charset=utf-8', { 'Location': '/', 'Set-Cookie': cookie });
     } catch (error) {
       console.error('login error', error);
       return send(res, 400, 'Orbit login request could not be processed.');
     }
   }
 
-  if (req.method === 'POST' && requestPath === '/api/logout') {
-    return send(res, 303, '', 'text/plain; charset=utf-8', {
-      'Location': '/',
-      'Set-Cookie': 'orbit_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax'
-    });
-  }
+  if (req.method === 'POST' && requestPath === '/api/logout') return send(res, 303, '', 'text/plain; charset=utf-8', { 'Location': '/', 'Set-Cookie': 'orbit_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax' });
+  if (req.method !== 'GET') return send(res, 405, 'Method Not Allowed', 'text/plain; charset=utf-8', { 'Allow': 'GET' });
 
-  if (req.method !== 'GET') {
-    return send(res, 405, 'Method Not Allowed', 'text/plain; charset=utf-8', { 'Allow': 'GET' });
-  }
-
-  if (requestPath === '/api/health') {
-    return send(res, 200, JSON.stringify({
-      status: 'ok',
-      service: 'prism-orbit',
-      version: '2026.09.23-hardening',
-      uptime_seconds: Math.floor(process.uptime()),
-      node: process.versions.node
-    }), 'application/json; charset=utf-8');
-  }
-
+  if (requestPath === '/api/health') return send(res, 200, JSON.stringify({ status: 'ok', service: 'prism-orbit', version: '2026.09.23-hotfix', uptime_seconds: Math.floor(process.uptime()), node: process.versions.node }), 'application/json; charset=utf-8');
   if (requestPath === '/api/session') {
     const session = readSession(req);
-    return send(res, 200, JSON.stringify(session ? {
-      authenticated: true,
-      user: { email: session.email, name: session.name, role: session.role }
-    } : { authenticated: false }), 'application/json; charset=utf-8');
+    return send(res, 200, JSON.stringify(session ? { authenticated: true, user: { email: session.email, name: session.name, role: session.role } } : { authenticated: false }), 'application/json; charset=utf-8');
   }
-
-  if (requestPath === '/manifest.webmanifest') {
-    return sendFile(res, path.join(root, 'manifest.webmanifest'), 'application/manifest+json; charset=utf-8');
-  }
-  if (requestPath === '/sw.js') {
-    return sendFile(res, path.join(root, 'sw.js'), 'application/javascript; charset=utf-8');
-  }
-  if (requestPath === '/icon.svg') {
-    return sendFile(res, path.join(root, 'icon.svg'), 'image/svg+xml; charset=utf-8');
-  }
-  if (requestPath === '/favicon.ico') {
-    return sendFile(res, path.join(root, 'favicon.ico'), 'image/x-icon');
-  }
-
+  if (requestPath === '/manifest.webmanifest') return sendFile(res, path.join(root, 'manifest.webmanifest'), 'application/manifest+json; charset=utf-8');
+  if (requestPath === '/sw.js') return sendFile(res, path.join(root, 'sw.js'), 'application/javascript; charset=utf-8');
+  if (requestPath === '/icon.svg') return sendFile(res, path.join(root, 'icon.svg'), 'image/svg+xml; charset=utf-8');
+  if (requestPath === '/favicon.ico') return sendFile(res, path.join(root, 'favicon.ico'), 'image/x-icon');
   return serveIndex(req, res);
 });
 
-server.listen(port, '0.0.0.0', () => {
-  console.log('Prism Orbit listening on ' + port);
-});
+server.listen(port, '0.0.0.0', () => console.log('Prism Orbit listening on ' + port));
