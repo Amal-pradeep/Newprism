@@ -7,7 +7,7 @@ const port = Number(process.env.PORT) || 8080;
 const root = __dirname;
 
 const USERS = {
-  'amalpradeep25@gmail.com': { name: 'Amal', role: 'owner', hash: process.env.ORBIT_AMAL_PASSWORD_SHA256 || '' },
+  'amalpradeep25@gmail.com': { name: 'Amalmenon', role: 'owner', hash: process.env.ORBIT_AMAL_PASSWORD_SHA256 || '' },
   'aadil.sudhir279@gmail.com': { name: 'Adhil', role: 'partner', hash: process.env.ORBIT_ADHIL_PASSWORD_SHA256 || '' },
   'msaneeshnath@gmail.com': { name: 'Aneesh', role: 'design', hash: process.env.ORBIT_ANEESH_PASSWORD_SHA256 || '' }
 };
