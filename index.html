@@ -12,7 +12,7 @@ button,input,textarea,select{font:inherit;max-width:100%}img,video,svg,canvas{ma
 @media(max-width:900px){html,body{width:100%;min-width:0;min-height:100%;overflow-x:hidden}.side{display:none}.main{margin:0;padding:calc(12px + env(safe-area-inset-top)) 11px calc(96px + env(safe-area-inset-bottom));width:100%;max-width:none;overflow:hidden}.top{align-items:flex-start;margin-bottom:10px}.title{font-size:25px;line-height:1.05}.top .muted{font-size:13px;line-height:1.35;max-width:190px}.actions{gap:6px}.actions .btn{min-width:52px;padding:9px 10px}.actions .ai{font-size:13px}.g2,.g3,.g4{grid-template-columns:1fr}.hero{min-height:390px;padding:15px;overflow:hidden}.hero h2{font-size:clamp(26px,8vw,34px);max-width:100%;margin:10px 0;line-height:1.05}.hero p{font-size:13px;line-height:1.5;max-width:100%;margin-bottom:14px}.command{width:100%;max-width:none;gap:6px;align-items:stretch}.command .input{flex:1 1 100%;width:100%}.command .btn{flex:1 1 auto;min-height:42px}.command .input{min-width:0}.command .btn{padding:9px}.core{width:132px;height:132px;right:-32px;top:auto;bottom:18px;opacity:.34}.ray{display:none}.search{display:none}.kanban{grid-template-columns:1fr}.card{padding:14px;border-radius:17px;min-width:0;overflow:hidden}.grid>*,.g2>*,.g3>*,.g4>*{min-width:0}.orbitArchitecture{margin-top:10px!important}.orbitArchitecture h2{font-size:23px!important;line-height:1.1}.archGrid{gap:6px;margin-top:11px}.archNode{padding:11px 12px}.archNode b{font-size:10px;min-width:0}.archNode span{font-size:10px;line-height:1.35}.archArrow{height:5px;font-size:13px}.systemPills{gap:5px}.systemPills span{font-size:7px;padding:5px 7px}.module{padding:13px}.metric{font-size:25px}.bottom{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:#090611f7;backdrop-filter:blur(18px);border-top:1px solid var(--line);z-index:100;padding:5px 4px calc(5px + env(safe-area-inset-bottom))}.bottom button{text-align:center;font-size:8px;padding:6px 2px;color:var(--muted);min-width:0}.bottom b{display:block;font-size:15px;line-height:1.1;margin-bottom:2px}.toast{left:12px;right:12px;bottom:78px;text-align:center}}
 .orbitArchitecture{background:radial-gradient(circle at 50% 0,#8b5cf61a,transparent 45%),linear-gradient(145deg,#ffffff0b,#ffffff02)}.archGrid{display:grid;grid-template-columns:1fr;gap:7px;margin-top:16px;max-width:850px}.archNode{border:1px solid #ffffff14;background:#07040dbb;border-radius:15px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:15px}.archNode b{font:700 11px 'Space Grotesk';letter-spacing:.1em;color:#d8b4fe;min-width:190px}.archNode span{color:#9f95aa;font-size:11px;line-height:1.5}.archNode.hot{border-color:#a855f755;box-shadow:inset 0 0 35px #8b5cf610,0 0 30px #8b5cf611}.archNode.approval{border-color:#ec489944}.archArrow{text-align:center;color:#a855f7;font-size:18px;height:9px}.systemPills{display:flex;flex-wrap:wrap;gap:6px;margin-top:15px}.systemPills span{font-size:8px;letter-spacing:.1em;color:#b9aec4;border:1px solid #ffffff13;padding:6px 8px;border-radius:99px;background:#ffffff04}@media(max-width:980px){.archNode{display:block}.archNode b{display:block;margin-bottom:5px}.archNode span{font-size:10px}}</style>
 <style id="authStyles">#authGate{position:fixed;inset:0;z-index:200;background:#08050ff2;backdrop-filter:blur(24px);display:grid;place-items:center;padding:20px}#authGate .authbox{width:min(460px,100%);border:1px solid #ffffff18;border-radius:24px;background:#10091aee;padding:24px;box-shadow:0 30px 100px #000}#authGate input{width:100%;margin:12px 0}</style></head>
-<body><div id="authGate"><div class="authbox"><div class="ey">PRISM ORBIT · TEAM BETA ACCESS</div><h1 style="margin:8px 0">Welcome to the Orbit.</h1><p class="muted">Simple team login for the Prism of Stories beta. Use your company email and the password provided to you.</p><input id="loginEmail" class="input" type="email" autocomplete="username" placeholder="your company email"><input id="loginPassword" class="input" type="password" autocomplete="current-password" placeholder="Orbit password"><button id="loginSubmit" type="button" class="btn primary" style="width:100%">Enter Orbit</button><div id="authMsg" class="result" style="display:none"></div><div class="muted" style="margin-top:12px;font-size:12px">Approved team: Amal · Adhil · Aneesh. This beta login is intentionally simple; Supabase remains the backend for future authenticated cloud sessions.</div></div></div>
+<body><div id="authGate"><div class="authbox"><div class="ey">PRISM ORBIT · TEAM ACCESS</div><h1 style="margin:8px 0">Welcome to the Orbit.</h1><p class="muted">Sign in with your approved Prism of Stories account.</p><form id="loginForm" method="POST" action="/api/login" autocomplete="on"><input id="loginEmail" name="email" class="input" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="your company email" required><input id="loginPassword" name="password" class="input" type="password" autocomplete="current-password" placeholder="Orbit password" required><button id="loginSubmit" type="submit" class="btn primary" style="width:100%">Enter Orbit</button></form><div id="authMsg" class="result" style="display:none"></div><div class="muted" style="margin-top:12px;font-size:12px">Approved team: Amal · Adhil · Aneesh.</div></div></div>
 <aside class="side">
   <div class="brand"><div class="brandmark"></div><div><b>PRISM ORBIT</b><small>Prism of Stories · Agency OS</small></div></div>
   <nav id="nav" class="nav"></nav>
@@ -98,6 +98,14 @@ function hideAuthGate(){const g=document.getElementById('authGate');if(g)g.style
 function showAuthGate(){const g=document.getElementById('authGate');if(g)g.style.display='grid'}
 async function initAuth(){
   try{
+    if(window.__ORBIT_SERVER_AUTH){
+      const u=window.__ORBIT_SERVER_AUTH;
+      AUTH={beta:true,id:'server-'+u.email,user:{email:u.email,name:u.name},role:u.role};
+      ORBIT_WORKSPACE=null;
+      hideAuthGate();
+      buildRoleAwareNav();
+      return true;
+    }
     const beta=localStorage.getItem('prism_orbit_beta_auth');
     if(beta){
       AUTH=JSON.parse(beta);
@@ -467,10 +475,11 @@ function buildRoleAwareNav(){
 }
 buildRoleAwareNav();
 document.getElementById('pages').innerHTML='';
-const loginButton=document.getElementById('loginSubmit');
-if(loginButton)loginButton.addEventListener('click',loginOrbit);
-document.getElementById('loginPassword')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();loginOrbit()}});
-document.getElementById('loginPassword')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();loginOrbit()}});
+const loginForm=document.getElementById('loginForm');
+if(loginForm)loginForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  loginOrbit();
+});
 /* Boot after the module registry is initialized so mobile Safari cannot hit a TDZ startup failure. */
 safeBoot();
 </script><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));}</script>
