@@ -48,7 +48,7 @@ async function cloudTask(title,priority='medium'){
   if(!AUTH||!ORBIT_WORKSPACE)return;
   try{await sb.request('orbit_tasks',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({workspace_id:ORBIT_WORKSPACE,title,priority,created_by:AUTH.user?.id||AUTH.id})})}catch(e){console.warn('cloudTask',e)}
 }
-async function initAuth(){
+async async function initAuth(){
   try{
     const raw=localStorage.getItem('prism_orbit_auth');
     if(raw) AUTH=JSON.parse(raw);
@@ -60,9 +60,9 @@ async function initAuth(){
     }
   }catch(e){AUTH=null;ORBIT_WORKSPACE=null;localStorage.removeItem('prism_orbit_auth');console.warn('Auth boot',e)}
 }
-function safeBoot(){
+async function safeBoot(){
   window.addEventListener('error',e=>{console.error(e.error||e.message);toast('Orbit recovered from a UI error.');});
-  try{show('home');renderLeads();renderTasks();initAuth();}catch(e){console.error(e);document.getElementById('pages').innerHTML='<section class="page active"><div class="card"><h2>Orbit Core</h2><p class="muted">The interface recovered from a startup error.</p><button class="btn primary" onclick="location.reload()">Reload Orbit</button></div></section>'}
+  try{await initAuth();show('home');renderLeads();renderTasks();greetTeam();}catch(e){console.error(e);document.getElementById('pages').innerHTML='<section class="page active"><div class="card"><h2>Orbit Core</h2><p class="muted">The interface recovered from a startup error.</p><button class="btn primary" onclick="location.reload()">Reload Orbit</button></div></section>'}
 }
 const KEY='prism_orbit_v10';
 const NAV=[
@@ -337,7 +337,7 @@ function managerFocus(){
   toast('Manager focus saved');
 }
 
-function openVoice(){if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){toast('Voice recognition is not supported in this browser.');return}const R=window.SpeechRecognition||window.webkitSpeechRecognition,r=new R();r.lang='en-IN';r.interimResults=false;r.onstart=()=>toast('Orbit listening…');r.onerror=()=>toast('Voice input stopped');r.onresult=e=>{const q=e.results[0][0].transcript;toast('Heard: '+q);document.getElementById('cmd')&&(document.getElementById('cmd').value=q);command()};r.start()}function closeModal(){document.getElementById('modal').classList.remove('on')}\nfunction copyOut(){if(window.out)navigator.clipboard?.writeText(window.out);toast('Copied to clipboard')}
+function teamIdentity(){const email=(AUTH?.user?.email||AUTH?.email||'').toLowerCase();const map={'amalpradeep25@gmail.com':{name:'Amal',role:'owner',module:'Amal’s Manager'},'aadil.sudhir279@gmail.com':{name:'Adhil',role:'partner',module:'Adhil · Accounts'},'msaneeshnath@gmail.com':{name:'Aneesh',role:'design',module:'Aneesh Creative Lab'}};return map[email]||{name:AUTH?.user?.user_metadata?.name||email||'Team Member',role:'member',module:'Command Center'}}function heyOrbit(){const i=document.getElementById('cmd');if(i){i.value='Hey Orbit';command()}else toast('Orbit is ready.')}function greetTeam(){const t=teamIdentity(),h=new Date().getHours(),p=h<12?'Good morning':h<17?'Good afternoon':'Good evening';toast(p+', '+t.name+'. Orbit is ready.');}function openVoice(){if(!AUTH?.access_token){toast('Sign in to Orbit before using voice commands.');return}if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){toast('Voice recognition is not supported in this browser.');return}const R=window.SpeechRecognition||window.webkitSpeechRecognition,r=new R();r.lang='en-IN';r.interimResults=false;r.onstart=()=>toast('Orbit listening…');r.onerror=()=>toast('Voice input stopped');r.onresult=e=>{const q=e.results[0][0].transcript;toast('Heard: '+q);document.getElementById('cmd')&&(document.getElementById('cmd').value=q);command()};r.start()}function closeModal(){document.getElementById('modal').classList.remove('on')}\nfunction copyOut(){if(window.out)navigator.clipboard?.writeText(window.out);toast('Copied to clipboard')}
 function resetAll(){if(confirm('Reset Prism Orbit local workspace data?')){localStorage.removeItem(KEY);location.reload()}}
 function searchAll(q){if(!q)return;const x=q.toLowerCase();const found=NAV.find(n=>n[2].toLowerCase().includes(x));if(found)show(found[0])}
 
