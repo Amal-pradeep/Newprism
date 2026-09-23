@@ -22,6 +22,7 @@ export default function ProspectsPage() {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
+  const [winPlan, setWinPlan] = useState<any>(null);
 
   async function load() {
     const r = await fetch("/api/prospects", { cache: "no-store" });
@@ -39,6 +40,8 @@ export default function ProspectsPage() {
     if (!query) return prospects;
     return prospects.filter(p => [p.name, p.email, p.metadata?.industry, p.metadata?.location, p.notes].join(" ").toLowerCase().includes(query));
   }, [prospects, q]);
+
+  async function showWinPlan(id: string) { setBusy(id); setMessage(""); const r=await fetch(`/api/win-strategy?prospectId=${encodeURIComponent(id)}`,{cache:"no-store"}); const d=await r.json(); setWinPlan(r.ok?d:null); setMessage(r.ok?"Win strategy generated from current account evidence.":d.error||"Could not build win strategy."); setBusy(""); }
 
   async function prepare(id: string) {
     setBusy(id); setMessage("");
@@ -72,6 +75,8 @@ export default function ProspectsPage() {
             Approval authority: Amal + Aadil
           </div>
         </div>
+
+        {winPlan && <section className="mb-5 rounded-2xl border border-violet-400/30 bg-violet-500/5 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs text-[var(--prism-muted)]">WIN STRATEGY ENGINE</p><h2 className="text-xl font-semibold">{winPlan.prospect?.name || "Account"} · {winPlan.plan.win_score}/100</h2><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.strategy}</p></div><button onClick={()=>setWinPlan(null)} className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs">Close</button></div><div className="mt-4 grid gap-4 lg:grid-cols-2"><div><h3 className="text-sm font-medium">Opening</h3><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.opening}</p><h3 className="mt-4 text-sm font-medium">Value hypothesis</h3><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.value_hypothesis}</p><h3 className="mt-4 text-sm font-medium">Next action</h3><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.next_action}</p></div><div><h3 className="text-sm font-medium">Research gaps</h3><ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-[var(--prism-muted)]">{winPlan.plan.research_gaps.map((x:string)=><li key={x}>{x}</li>)}</ul><h3 className="mt-4 text-sm font-medium">Discovery</h3><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.discovery_questions.slice(0,5).join(" · ")}</p></div></div></section>}
 
         <div className="mb-5 grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><div className="text-xs text-[var(--prism-muted)]">Research database</div><div className="mt-2 text-3xl font-semibold">{prospects.length}</div></div>
@@ -110,7 +115,7 @@ export default function ProspectsPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {!pending && p.email && <button disabled={busy===p.id} onClick={()=>prepare(p.id)} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs hover:bg-white/5"><Mail size={14}/> {busy===p.id ? "Preparing…" : "Prepare cold email"}</button>}
+                    <button disabled={busy===p.id} onClick={()=>showWinPlan(p.id)} className="inline-flex items-center gap-2 rounded-xl border border-violet-400/30 px-3 py-2 text-xs hover:bg-violet-500/10"><Sparkles size={14}/> {busy===p.id ? "Researching…" : "Build Win Strategy"}</button>\n                    {!pending && p.email && <button disabled={busy===p.id} onClick={()=>prepare(p.id)} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs hover:bg-white/5"><Mail size={14}/> {busy===p.id ? "Preparing…" : "Prepare cold email"}</button>}
                     {!p.email && <span className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs text-[var(--prism-muted)]">Verify email first</span>}
                   </div>
                 </div>
