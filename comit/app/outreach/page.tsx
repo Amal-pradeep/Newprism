@@ -36,7 +36,6 @@ export default function OutreachDashboard(){
 
   const m=data?.metrics;
   const due=useMemo(()=>data?.followups.filter((f:any)=>f.status==="pending").slice(0,16)||[],[data]);
-  const pendingApprovals=useMemo(()=>data?.recent.filter((x:any)=>x.status==="pending").length||0,[data]);
 
   return <main className="min-h-screen bg-[var(--prism-bg)] text-[var(--prism-text)] p-5 lg:p-8">
     <div className="mx-auto max-w-7xl">
@@ -83,7 +82,7 @@ export default function OutreachDashboard(){
             <div className="mt-4 space-y-2">
               {due.slice(0,8).map((f:any)=><div key={f.id} className="flex flex-col gap-3 rounded-xl border border-[var(--prism-border)] p-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-medium">{f.prospects?.name||"Prospect"}</span><span className="rounded-full bg-white/5 px-2 py-1 text-[10px]">Touch {f.sequence_no}</span><span className={new Date(f.due_at)<=new Date()?"text-amber-300":"text-[var(--prism-muted)]"}>{dueLabel(f.due_at)}</span></div><div className="mt-1 text-xs text-[var(--prism-muted)]">{f.label} · {fmtDate(f.due_at)}</div></div>
-                <div className="flex gap-2"><button disabled={busy===f.id||f.status!=="pending"} onClick={()=>action({action:"prepare-followup",followupId:f.id})} className="rounded-xl bg-white px-3 py-2 text-xs font-medium text-black disabled:opacity-40">{f.status==="prepared"?"Prepared":"Prepare"}</button><button disabled={busy===f.id} onClick={()=>action({action:"skip-followup",followupId:f.id})} className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs">Skip</button></div>
+                <div className="flex flex-wrap gap-2"><button disabled={busy===f.id||f.status!=="pending"} onClick={()=>action({action:"prepare-followup",followupId:f.id})} className="rounded-xl bg-white px-3 py-2 text-xs font-medium text-black disabled:opacity-40">{f.status==="prepared"?"Prepared":"Prepare"}</button><button disabled={busy===f.id} onClick={()=>action({action:"mark-outcome",prospectId:f.prospect_id,stage:"replied"})} className="rounded-xl border border-emerald-400/30 px-3 py-2 text-xs">Reply</button><button disabled={busy===f.id} onClick={()=>action({action:"mark-outcome",prospectId:f.prospect_id,stage:"meeting"})} className="rounded-xl border border-violet-400/30 px-3 py-2 text-xs">Meeting</button><button disabled={busy===f.id} onClick={()=>action({action:"skip-followup",followupId:f.id})} className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs">Skip</button></div>
               </div>)}
               {!due.length&&<div className="rounded-xl border border-dashed border-[var(--prism-border)] p-6 text-center text-sm text-[var(--prism-muted)]">No pending follow-ups.</div>}
             </div>
