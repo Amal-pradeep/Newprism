@@ -108,9 +108,9 @@
         '<h1>One command center for the <span>whole agency.</span></h1>'+
         '<p>Orbit now puts business intelligence, UAE prospecting, Gmail outreach, tasks, clients, marketing, finance, automation and production observability behind one safer operating layer. Propose first. Approve sensitive actions. Learn from outcomes.</p>'+
         '<div class="v2-actions">'+
-          '<button class="v2-btn primary" onclick="show(\\'outreach\\')">🎯 Open sales pipeline</button>'+
-          '<button class="v2-btn" onclick="show(\\'manager\\')">♛ Executive priorities</button>'+
-          '<button class="v2-btn" onclick="show(\\'monitoring\\')">📈 Production health</button>'+
+          '<button class="v2-btn primary" onclick="show(\'outreach\')">🎯 Open sales pipeline</button>'+
+          '<button class="v2-btn" onclick="show(\'manager\')">♛ Executive priorities</button>'+
+          '<button class="v2-btn" onclick="show(\'monitoring\')">📈 Production health</button>'+
           '<button class="v2-btn" onclick="openVoice()">◉ Ask Orbit</button>'+
           '<button class="v2-btn" onclick="v2Refresh()">↻ Refresh</button>'+
         '</div>'+
@@ -118,7 +118,7 @@
       '<div id="v2-live" class="v2-grid"></div>'+
       '<div class="v2-card"><div class="v2-section-head"><div><div class="v2-ey">RUNTIME TRUST LAYER</div><h3>Production health</h3></div><span id="v2-runtime-note" class="v2-runtime">Checking…</span></div><div id="v2-health"></div></div>'+
       '<div class="v2-two">'+
-        section('Active pipeline','UAE SALES INTELLIGENCE','<div id="v2-pipeline"></div>','<button class="v2-btn" onclick="show(\\'outreach\\')">Manage →</button>')+
+        section('Active pipeline','UAE SALES INTELLIGENCE','<div id="v2-pipeline"></div>','<button class="v2-btn" onclick="show(\'outreach\')">Manage →</button>')+
         section('Business-model map','SEGMENTATION','<div id="v2-models"></div>')+
       '</div>'+
       '<div class="v2-two">'+
@@ -132,7 +132,7 @@
           '<div class="v2-check"><b>Automation</b><span>Trigger/action workflows with human approval for external actions.</span></div>'+
           '<div class="v2-check"><b>Observability</b><span>Health endpoint, request metrics, error capture and runtime advice.</span></div>'+
         '</div>')+
-        section('AI operating rule','SAFETY + QUALITY','<div class="v2-risk">Orbit can prepare, organize and recommend work. External communication, ad spend and other sensitive actions remain approval-gated. No live metric is invented; integrations are shown as connected only when verified.</div><div class="v2-actions"><button class="v2-btn" onclick="show(\\'ai\\')">Open Orbit AI</button><button class="v2-btn" onclick="show(\\'autopilot\\')">Open Autopilot</button><button class="v2-btn" onclick="show(\\'reports\\')">Open Reports</button></div>')+
+        section('AI operating rule','SAFETY + QUALITY','<div class="v2-risk">Orbit can prepare, organize and recommend work. External communication, ad spend and other sensitive actions remain approval-gated. No live metric is invented; integrations are shown as connected only when verified.</div><div class="v2-actions"><button class="v2-btn" onclick="show(\'ai\')">Open Orbit AI</button><button class="v2-btn" onclick="show(\'autopilot\')">Open Autopilot</button><button class="v2-btn" onclick="show(\'reports\')">Open Reports</button></div>')+
       '</div>'+
       '<div class="v2-footer"><span>Orbit V2 · '+VERSION+'</span><span>Prism of Stories · prismofstories.com</span></div>'+
     '</div>';
