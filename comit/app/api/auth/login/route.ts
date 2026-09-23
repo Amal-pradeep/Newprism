@@ -1,9 +1,9 @@
 import {NextResponse} from "next/server";
 
 const users=[
-  {email:process.env.COMIT_AMAL_EMAIL,name:"Amal",passwordRequired:false},
-  {email:process.env.COMIT_ADHIL_EMAIL,passwordHash:process.env.COMIT_ADHIL_PASSWORD_SHA256,name:"Adhil",passwordRequired:true},
-  {email:process.env.COMIT_ANEESH_EMAIL,passwordHash:process.env.COMIT_ANEESH_PASSWORD_SHA256,name:"Aneesh",passwordRequired:true},
+  {email:"amalpradeep25@gmail.com",name:"Amal",passwordRequired:false},
+  {email:process.env.COMIT_ADHIL_EMAIL,name:"Adhil",passwordHash:process.env.COMIT_ADHIL_PASSWORD_SHA256,passwordRequired:true},
+  {email:process.env.COMIT_ANEESH_EMAIL,name:"Aneesh",passwordHash:process.env.COMIT_ANEESH_PASSWORD_SHA256,passwordRequired:true},
 ];
 
 export async function POST(req:Request){
