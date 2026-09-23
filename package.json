@@ -9,7 +9,7 @@
     "check:syntax": "node --check server.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": "24.x"
   },
   "packageManager": "npm@10.8.2",
   "description": "Prism Orbit business operations OS — resilient UI, prospect intelligence, monitoring and business memory"
