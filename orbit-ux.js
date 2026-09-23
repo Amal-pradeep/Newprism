@@ -26,7 +26,7 @@ const css=`
 .palette-item{width:100%;display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#eee;padding:12px;border-radius:11px;text-align:left;cursor:pointer}
 .palette-item:hover,.palette-item:focus{background:#ffffff0d;outline:0}
 .palette-item small{display:block;color:#a9a0ba;margin-top:2px}
-@media(max-width:900px){.quickdock{left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));justify-content:space-between;padding:6px}.quickdock button{flex:1;padding:10px 5px;font-size:11px}.quickdock button:nth-child(5){display:none}}
+@media(max-width:900px){.quickdock{left:10px;right:10px;bottom:calc(78px + env(safe-area-inset-bottom));justify-content:space-between;padding:6px}.quickdock button{flex:1;padding:9px 5px;font-size:11px}.quickdock button:nth-child(5){display:none}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition:none!important}}
 `;
 function inject(){
@@ -41,7 +41,7 @@ function inject(){
  dock.querySelector('[data-palette]').onclick=openPalette;
  const search=document.getElementById('orbitPaletteSearch');search.oninput=()=>renderPalette(search.value);
  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openPalette()}if(e.key==='Escape')closePalette()});
- if(document.getElementById('loginForm'))dock.style.display='none';
+ const gate=document.getElementById('authGate');if(gate&&getComputedStyle(gate).display!=='none')dock.style.display='none';
 }
 function renderPalette(q=''){
  const host=document.getElementById('orbitPaletteList');if(!host)return;
