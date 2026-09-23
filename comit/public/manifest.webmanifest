@@ -1,0 +1,9 @@
+{
+  "name": "COMIT — Prism of Stories",
+  "short_name": "COMIT",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090812",
+  "theme_color": "#090812",
+  "description": "AI business operating system for Prism of Stories."
+}
