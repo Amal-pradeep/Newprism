@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.join(__dirname,'..');
 
-for(const file of ['outreach.js','automation.js','monitoring.js','orbit-ux.js']){
+for(const file of ['outreach.js','automation.js','monitoring.js','orbit-ux.js','orbit-v2.js']){
  test('syntax: '+file,()=>{const src=fs.readFileSync(path.join(root,file),'utf8');assert.doesNotThrow(()=>new Function(src));});
 }
 
