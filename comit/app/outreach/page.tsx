@@ -17,12 +17,22 @@ export default function OutreachDashboard(){
   const [loading,setLoading]=useState(true);
   const [message,setMessage]=useState("");
   const [busy,setBusy]=useState("");
+  const [syncing,setSyncing]=useState(false);
 
   async function load(){
     setLoading(true);
     try{const r=await fetch("/api/outreach/dashboard",{cache:"no-store"});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not load dashboard");setData(d)}catch(e:any){setMessage(e.message||"Dashboard unavailable")}finally{setLoading(false)}
   }
   useEffect(()=>{load()},[]);
+
+  async function syncGmail(){
+    setSyncing(true);setMessage("");
+    try{
+      const r=await fetch("/api/outreach/reconcile",{method:"POST"});
+      const d=await r.json();if(!r.ok)throw new Error(d.error||"Gmail sync failed");
+      setMessage(`Gmail synced: ${d.newReplies||0} new replies matched.`);await load();
+    }catch(e:any){setMessage(e.message||"Gmail sync failed")}finally{setSyncing(false)}
+  }
 
   async function action(payload:any){
     setBusy(String(payload.followupId||payload.prospectId||payload.action));setMessage("");
@@ -46,7 +56,7 @@ export default function OutreachDashboard(){
           <p className="mt-2 max-w-3xl text-sm text-[var(--prism-muted)]">Track sent campaigns, CRM-recorded replies, meetings, restaurant prospects and the next approval-gated follow-up without leaving COMIT.</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={load} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-sm"><RefreshCw size={15}/> Refresh</button>
+          <button onClick={syncGmail} disabled={syncing} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-sm"><Mail size={15}/> {syncing?"Syncing…":"Sync Gmail"}</button><button onClick={load} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-sm"><RefreshCw size={15}/> Refresh</button>
           <a href="/prospects" className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-medium text-black">Open CRM <ArrowUpRight size={15}/></a>
         </div>
       </header>
@@ -59,7 +69,7 @@ export default function OutreachDashboard(){
           {[
             ["Sent",m.sent,Send],
             ["Pending approval",m.pending.length,Clock3],
-            ["Replies recorded",m.replied,MessageSquareReply],
+            ["Replies",m.actualReplies,MessageSquareReply],
             ["Meetings",m.meetings,Users],
             ["Follow-ups due",m.dueFollowups,Mail],
             ["Restaurant sends",m.restaurantSent,Utensils],
@@ -87,6 +97,11 @@ export default function OutreachDashboard(){
               {!due.length&&<div className="rounded-xl border border-dashed border-[var(--prism-border)] p-6 text-center text-sm text-[var(--prism-muted)]">No pending follow-ups.</div>}
             </div>
           </article>
+        </section>
+
+        <section className="mt-4 rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5">
+          <div className="flex items-center justify-between"><div><p className="text-xs text-[var(--prism-muted)]">GMAIL RECONCILIATION</p><h2 className="mt-1 font-semibold">Incoming replies</h2></div><span className="text-xs text-[var(--prism-muted)]">Matched automatically</span></div>
+          <div className="mt-4 space-y-2">{(data.replies||[]).map((r:any)=><div key={r.id} className="rounded-xl border border-[var(--prism-border)] p-3"><div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between"><div><div className="text-sm font-medium">{r.prospects?.name||r.sender_email}</div><div className="text-xs text-[var(--prism-muted)]">{r.sender_email} · {r.subject||"Reply"}</div></div><div className="text-xs text-[var(--prism-muted)]">{fmtDate(r.received_at)}</div></div><p className="mt-2 text-sm text-[var(--prism-muted)]">{r.snippet||"Reply received."}</p></div>)}{!(data.replies||[]).length&&<div className="rounded-xl border border-dashed border-[var(--prism-border)] p-6 text-center text-sm text-[var(--prism-muted)]">No matched campaign replies yet. Use Sync Gmail to check now.</div>}</div>
         </section>
 
         <section className="mt-4 grid gap-4 xl:grid-cols-[1.2fr_.8fr]">
