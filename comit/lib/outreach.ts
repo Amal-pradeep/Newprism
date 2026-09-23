@@ -1,0 +1,109 @@
+import { createHash } from "crypto";
+import { supabaseAdmin } from "@/lib/supabase";
+
+export const AMAL_EMAIL = "amalpradeep25@gmail.com";
+export const AADIL_EMAIL = "aadil.sudhir279@gmail.com";
+export const SENDER_EMAIL = process.env.ORBIT_GMAIL_EMAIL || "prismofstories25@gmail.com";
+
+export type CometUser = { email: string; name?: string };
+
+export function getSessionUser(req: Request): CometUser | null {
+  const raw = req.headers.get("cookie") || "";
+  const match = raw.match(/(?:^|;\s*)comit_session=([^;]+)/);
+  if (!match) return null;
+  try {
+    const decoded = JSON.parse(Buffer.from(decodeURIComponent(match[1]), "base64url").toString("utf8"));
+    const email = String(decoded.email || "").toLowerCase();
+    if (![AMAL_EMAIL, AADIL_EMAIL].includes(email)) return null;
+    return { email, name: decoded.name };
+  } catch {
+    return null;
+  }
+}
+
+export function isApprover(user: CometUser | null) {
+  return !!user && [AMAL_EMAIL, AADIL_EMAIL].includes(user.email.toLowerCase());
+}
+
+export function outreachBody(prospect: any) {
+  const fit = prospect.metadata?.fit_reason || "digital growth, content and performance marketing";
+  return [
+    `Hi ${prospect.name} team,`,
+    "",
+    `We came across ${prospect.name} while researching businesses in ${prospect.metadata?.location || "the UAE"} and noticed the work you are doing in ${prospect.metadata?.industry || "your sector"}.`,
+    "",
+    `Prism of Stories helps brands improve ${fit} through digital marketing, AI and web solutions.`,
+    "",
+    "We can share a short, no-obligation growth audit with 3–5 practical opportunities specific to your brand.",
+    "",
+    "Would you be open to a 15-minute conversation this week?",
+    "",
+    "Regards,",
+    "Amal Pradeep",
+    "Prism of Stories",
+    "Digital Marketing · AI · Web Development",
+    "https://prismofstories.com",
+    "",
+    "P.S. If this isn't relevant, just let us know and we won't follow up."
+  ].join("\n");
+}
+
+function base64Url(input: string) {
+  return Buffer.from(input).toString("base64url");
+}
+
+function rawMail(p: { to: string; cc: string[]; subject: string; body: string }) {
+  const headers = [
+    "MIME-Version: 1.0",
+    'Content-Type: text/plain; charset="UTF-8"',
+    "Content-Transfer-Encoding: 8bit",
+    "From: " + SENDER_EMAIL,
+    "To: " + p.to,
+    "Cc: " + p.cc.join(", "),
+    "Subject: " + p.subject
+  ];
+  return base64Url(headers.join("\r\n") + "\r\n\r\n" + p.body);
+}
+
+async function googleToken() {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.ORBIT_GMAIL_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error("Gmail sending is not configured in COMIT. Connect the Prism Gmail OAuth credentials first.");
+  }
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token"
+    })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error_description || data.error || "Google OAuth failed");
+  return data.access_token as string;
+}
+
+export async function sendApprovedEmail(p: { to: string; cc: string[]; subject: string; body: string }) {
+  const accessToken = await googleToken();
+  const response = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + accessToken,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ raw: rawMail(p) })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error?.message || "Gmail API send failed");
+  return data as { id?: string; threadId?: string };
+}
+
+export async function requireAdminDb() {
+  const admin = supabaseAdmin();
+  if (!admin) throw new Error("Supabase server credentials are not configured.");
+  return admin;
+}
