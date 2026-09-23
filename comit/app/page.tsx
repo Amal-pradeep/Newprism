@@ -48,4 +48,3 @@ export default function CommandCenter() {
     </main>
   );
 }
-\n\n// Team profiles are available at /team; each member receives an AI-personalized task queue.
