@@ -239,6 +239,7 @@ const server = http.createServer(async (req, res) => {
     catch(e) { return send(res,400,JSON.stringify({error:'Invalid client error payload.'}),'application/json; charset=utf-8'); }
   }
   if (requestPath === '/api/monitoring/summary') { const u=ownerOnly(req); if(!u)return send(res,401,JSON.stringify({error:'Owner access required.'}),'application/json; charset=utf-8'); return send(res,200,JSON.stringify(monitoringSummary()),'application/json; charset=utf-8'); }
+  if (requestPath === '/api/knowledge') { const u=readSession(req); if(!u)return send(res,401,JSON.stringify({error:'Authentication required.'}),'application/json; charset=utf-8'); try { const data=JSON.parse(fs.readFileSync(path.join(root,'orbit-knowledge.json'),'utf8')); return send(res,200,JSON.stringify(data),'application/json; charset=utf-8'); } catch(e) { return send(res,500,JSON.stringify({error:'Knowledge base unavailable.'}),'application/json; charset=utf-8'); } }
   if (requestPath === '/api/session') {
     const session = readSession(req);
     return send(res, 200, JSON.stringify(session ? { authenticated: true, user: { email: session.email, name: session.name, role: session.role } } : { authenticated: false }), 'application/json; charset=utf-8');
