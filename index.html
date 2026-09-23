@@ -401,5 +401,5 @@ document.getElementById('bottom').innerHTML=NAV.slice(0,5).map(x=>'<button data-
 document.getElementById('pages').innerHTML='';
 /* Boot after the module registry is initialized so mobile Safari cannot hit a TDZ startup failure. */
 safeBoot();
-</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));}</script>
 </body></html>
