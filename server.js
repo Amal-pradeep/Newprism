@@ -11,6 +11,29 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const MAX_LOGIN_ATTEMPTS = 10;
 const loginAttempts = new Map();
 
+// Orbit application telemetry: lightweight in-process monitoring for production diagnostics.
+const orbitMetrics = {
+  startedAt: Date.now(), totalRequests: 0, totalErrors: 0, statusCounts: {},
+  routes: {}, recentErrors: [], recentRequests: []
+};
+function recordRequest(req, res, startedAt) {
+  const duration = Date.now() - startedAt;
+  const route = decodeURIComponent((req.url || '/').split('?')[0]);
+  const status = res.statusCode || 200;
+  orbitMetrics.totalRequests += 1;
+  orbitMetrics.statusCounts[status] = (orbitMetrics.statusCounts[status] || 0) + 1;
+  const r = orbitMetrics.routes[route] || (orbitMetrics.routes[route] = {count:0,errors:0,totalMs:0,maxMs:0});
+  r.count += 1; r.totalMs += duration; r.maxMs = Math.max(r.maxMs, duration);
+  if (status >= 500) { orbitMetrics.totalErrors += 1; r.errors += 1; orbitMetrics.recentErrors.unshift({at:new Date().toISOString(),method:req.method,path:route,status,duration}); orbitMetrics.recentErrors = orbitMetrics.recentErrors.slice(0,25); }
+  orbitMetrics.recentRequests.unshift({at:new Date().toISOString(),method:req.method,path:route,status,duration});
+  orbitMetrics.recentRequests = orbitMetrics.recentRequests.slice(0,50);
+}
+function monitoringSummary() {
+  const routes = Object.entries(orbitMetrics.routes).map(([path,r]) => ({path,count:r.count,errors:r.errors,avgMs:r.count?Math.round(r.totalMs/r.count):0,maxMs:r.maxMs})).sort((a,b)=>b.count-a.count);
+  const mem=process.memoryUsage();
+  return {service:'prism-orbit',version:'2026.09.23-gmail-monitoring',uptime_seconds:Math.floor(process.uptime()),started_at:new Date(orbitMetrics.startedAt).toISOString(),requests:{total:orbitMetrics.totalRequests,errors:orbitMetrics.totalErrors,error_rate:orbitMetrics.totalRequests?Number((orbitMetrics.totalErrors/orbitMetrics.totalRequests).toFixed(4)):0,status_counts:orbitMetrics.statusCounts,routes},resources:{rss_mb:Number((mem.rss/1048576).toFixed(1)),heap_used_mb:Number((mem.heapUsed/1048576).toFixed(1)),heap_total_mb:Number((mem.heapTotal/1048576).toFixed(1))},gmail:{configured:gmailConfigured()},recent_errors:orbitMetrics.recentErrors,recent_requests:orbitMetrics.recentRequests};
+}
+
 const USERS = {
   'amalpradeep25@gmail.com': { name: 'Amalmenon', role: 'owner', hash: process.env.ORBIT_AMAL_PASSWORD_SHA256 || '' },
   'aadil.sudhir279@gmail.com': { name: 'Aadil', role: 'partner', hash: process.env.ORBIT_AADIL_PASSWORD_SHA256 || '' },
@@ -168,6 +191,8 @@ function serveIndex(req, res) {
 }
 
 const server = http.createServer(async (req, res) => {
+  const requestStartedAt = Date.now();
+  res.on('finish', () => recordRequest(req, res, requestStartedAt));
   const requestPath = decodeURIComponent((req.url || '/').split('?')[0]);
 
   if (req.method === 'POST' && requestPath === '/api/login') {
@@ -205,7 +230,8 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && requestPath === '/api/logout') return send(res, 303, '', 'text/plain; charset=utf-8', { 'Location': '/', 'Set-Cookie': 'orbit_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax' });
   if (!['GET','POST'].includes(req.method)) return send(res,405,'Method Not Allowed','text/plain; charset=utf-8',{Allow:'GET, POST'});
 
-  if (requestPath === '/api/health') return send(res, 200, JSON.stringify({ status: 'ok', service: 'prism-orbit', version: '2026.09.23-gmail', uptime_seconds: Math.floor(process.uptime()), node: process.versions.node }), 'application/json; charset=utf-8');
+  if (requestPath === '/api/health') return send(res, 200, JSON.stringify({ status: 'ok', service: 'prism-orbit', version: '2026.09.23-gmail-monitoring', uptime_seconds: Math.floor(process.uptime()), node: process.versions.node, monitoring: true }), 'application/json; charset=utf-8');
+  if (requestPath === '/api/monitoring/summary') { const u=ownerOnly(req); if(!u)return send(res,401,JSON.stringify({error:'Owner access required.'}),'application/json; charset=utf-8'); return send(res,200,JSON.stringify(monitoringSummary()),'application/json; charset=utf-8'); }
   if (requestPath === '/api/session') {
     const session = readSession(req);
     return send(res, 200, JSON.stringify(session ? { authenticated: true, user: { email: session.email, name: session.name, role: session.role } } : { authenticated: false }), 'application/json; charset=utf-8');
