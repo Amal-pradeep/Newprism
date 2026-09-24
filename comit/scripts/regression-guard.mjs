@@ -28,7 +28,7 @@ const outreach = fs.readFileSync(path.join(root, "lib/outreach.ts"), "utf8");
 if (!outreach.includes("SPF") && !outreach.includes("SENDER_EMAIL")) {
   throw new Error("Regression guard: outreach sender configuration is missing.");
 }
-if (!outreach.includes("unsubscribe") && !outreach.includes("not relevant")) {
+if (!outreach.includes("unsubscribe") && !outreach.includes("not relevant") && !outreach.includes("isn't relevant")) {
   throw new Error("Regression guard: outreach suppression/opt-out language is missing.");
 }
 
