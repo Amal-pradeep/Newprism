@@ -39,3 +39,14 @@ This log records substantive product, engineering, operations, and deployment wo
 - Dependency installation reported two audit findings (one moderate and one high); they were not changed as part of this deployment.
 
 **Deployment status and limits:** The Worker is live at the public `workers.dev` URL, version `fc76a43c-b4d6-487d-a2a2-04c8cda95e6e`. No COMIT integration settings/secrets were present or added, so Supabase, n8n, Gmail, and session-backed workflows are not configured on this deployment. This confirms the live app shell and health endpoint only; it does not complete the production readiness checklist. The documented Vercel production target and `main` remain unchanged.
+
+
+## 2026-09-24 — No-billing hard stop
+
+**Request:** Enforce the rule that COMIT must not generate bills on any platform.
+
+**Decision:** Free/no-charge tiers only. Do not enable paid plans, paid integrations, usage-based overages, or platform resources without a verified no-cost hard cap. A quota that can roll into a charge is not acceptable; automations must stop or degrade when a free quota is exhausted.
+
+**Cloudflare check:** The Cloudflare account used for the Worker deployment was authenticated for deployment, but its token did not grant Billing Read access. The Cloudflare account’s active Workers billing plan could not be verified in this review. Cloudflare’s current public pricing documentation says Workers Free is the default and is quota-limited, while Workers Paid starts at $5/month and can incur usage charges. No plan-change, payment-method, or other billing setting was changed. Until account billing status is verified, a zero-billing guarantee for the existing live Worker is unconfirmed.
+
+**Implementation policy:** Keep external or usage-metered automation integrations disabled unless their no-charge behavior and limits are verified. Prefer local deterministic workflows and free-tier services that reject over-quota requests without billing. Record all future COMIT changes and cost checks here. Source: [Cloudflare Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/).
