@@ -2,6 +2,7 @@ services:
   - type: web
     name: comit-prism
     runtime: node
+    rootDir: comit
     plan: free
     buildCommand: npm ci && npm run typecheck && npm run build
     startCommand: npm start
