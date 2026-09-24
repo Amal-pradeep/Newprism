@@ -10,7 +10,7 @@ COMIT is the AI business operating system for Prism of Stories, with Lunes AI as
 - Vercel as the target production platform
 - Human approval gates for external communication and ad spend
 - Mobile-first, responsive and accessible UX
-- No paid scheduler dependency: recurring workflows belong in n8n
+- No platform billing: use verified zero-cost tiers only, with hard limits and graceful stop when a free quota is reached.
 
 ## Revenue operating loop
 1. **Discover** — research industries, pain points and ideal customers.
@@ -49,3 +49,9 @@ Record every substantive COMIT change in `docs/WORK_LOG.md`. Add an entry as wor
 ## Cloudflare migration status
 
 A direct Cloudflare Workers deployment of `cloudflare-migration` is live at [comit.amalpradeep25-53c.workers.dev](https://comit.amalpradeep25-53c.workers.dev). It has no custom domain and its COMIT integration settings/secrets have not been configured, so it verifies the app shell and health endpoint but is not a completed production setup. The GitHub workflow validates the COMIT app and does not deploy it automatically. The intended production target remains Vercel; see `docs/WORK_LOG.md` for deployment and verification details.
+
+## Cost policy — hard stop
+
+COMIT must not incur charges on Cloudflare or any other platform. Use only a verified no-charge tier; do not enable paid plans, metered overages, paid integrations, usage-based AI, or payment methods for COMIT. Every automation must have a cost ceiling or fail closed before it can create billable usage. When a provider cannot guarantee that excess usage is rejected without charge, keep that integration disabled. Recheck current provider terms before enabling services because free limits can change.
+
+Cloudflare documents Workers Free as the default plan with request and CPU limits, and Workers Paid as a separate plan starting at $5/month with additional usage charges ([Cloudflare Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/)). This documentation alone does not establish which Workers plan this account is using. Billing plan status must be verified in the account before claiming a zero-billing guarantee.
