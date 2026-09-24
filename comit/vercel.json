@@ -2,15 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "npm install",
-  "buildCommand": "npm run build",
-  "crons": [
-    {
-      "path": "/api/outreach/reconcile",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/learning",
-      "schedule": "0 3 * * *"
-    }
-  ]
+  "buildCommand": "npm run build"
 }
