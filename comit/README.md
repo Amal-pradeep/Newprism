@@ -48,4 +48,4 @@ Record every substantive COMIT change in `docs/WORK_LOG.md`. Add an entry as wor
 
 ## Cloudflare migration status
 
-The Cloudflare Workers setup on `cloudflare-migration` is for build and local preview validation. Its GitHub workflow validates the COMIT app and does not deploy production. See `docs/WORK_LOG.md` for the current work record. The existing production deployment target remains as documented above.
+A direct Cloudflare Workers deployment of `cloudflare-migration` is live at [comit.amalpradeep25-53c.workers.dev](https://comit.amalpradeep25-53c.workers.dev). It has no custom domain and its COMIT integration settings/secrets have not been configured, so it verifies the app shell and health endpoint but is not a completed production setup. The GitHub workflow validates the COMIT app and does not deploy it automatically. The intended production target remains Vercel; see `docs/WORK_LOG.md` for deployment and verification details.
