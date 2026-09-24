@@ -19,15 +19,5 @@
         "icon.svg"
       ]
     }
-  ],
-  "secrets": {
-    "required": [
-      "ORBIT_SESSION_SECRET",
-      "ORBIT_AMAL_PASSWORD_SHA256",
-      "ORBIT_AADIL_PASSWORD_SHA256",
-      "ORBIT_ANEESH_PASSWORD_SHA256",
-      "GOOGLE_CLIENT_ID",
-      "GOOGLE_CLIENT_SECRET"
-    ]
-  }
+  ]
 }
