@@ -41,3 +41,11 @@ Command Center, AI, CRM, Sales Intelligence, Lead Research, Outreach, Gmail, Cli
 
 ## Deployment
 The production app lives under `comit/` and is intended to be deployed as a Next.js project with Vercel's root directory set to `comit`. Keep the repository's legacy Prism Orbit system intact as a fallback until the COMIT production verification checklist is complete.
+
+## Engineering documentation
+
+Record every substantive COMIT change in `docs/WORK_LOG.md`. Add an entry as work proceeds, covering the request, what changed, relevant decisions, verification and its result, and deployment status. State explicitly when production was not deployed or could not be verified. Never put credentials or secret values in documentation.
+
+## Cloudflare migration status
+
+The Cloudflare Workers setup on `cloudflare-migration` is for build and local preview validation. Its GitHub workflow validates the COMIT app and does not deploy production. See `docs/WORK_LOG.md` for the current work record. The existing production deployment target remains as documented above.
