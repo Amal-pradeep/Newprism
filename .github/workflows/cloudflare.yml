@@ -1,8 +1,15 @@
-name: COMIT Cloudflare
+name: COMIT Cloudflare validation
 
 on:
   push:
     branches: [main]
+    paths:
+      - "comit/**"
+      - ".github/workflows/cloudflare.yml"
+  pull_request:
+    paths:
+      - "comit/**"
+      - ".github/workflows/cloudflare.yml"
   workflow_dispatch:
 
 permissions:
@@ -10,61 +17,22 @@ permissions:
 
 jobs:
   validate:
-    name: Validate Cloudflare Worker
+    name: Build and validate COMIT for Cloudflare
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-      - name: Install application dependencies
+          cache-dependency-path: comit/package-lock.json
+      - name: Install dependencies
+        working-directory: comit
         run: npm ci
-      - name: Existing tests
-        run: |
-          npm run check:syntax
-          npm test
-          npm run test:smoke
-      - name: Wrangler dry run
-        run: npx wrangler@latest deploy --dry-run
-
-  deploy:
-    name: Deploy COMIT to Cloudflare
-    needs: validate
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Deploy Worker
-        id: deploy
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: latest
-          command: deploy
-          secrets: |
-            ORBIT_SESSION_SECRET
-            ORBIT_AMAL_PASSWORD_SHA256
-            ORBIT_AADIL_PASSWORD_SHA256
-            ORBIT_ANEESH_PASSWORD_SHA256
-            GOOGLE_CLIENT_ID
-            GOOGLE_CLIENT_SECRET
-            ORBIT_GMAIL_REFRESH_TOKEN
-            ORBIT_GMAIL_EMAIL
-            GOOGLE_REDIRECT_URI
-        env:
-          ORBIT_SESSION_SECRET: ${{ secrets.ORBIT_SESSION_SECRET }}
-          ORBIT_AMAL_PASSWORD_SHA256: ${{ secrets.ORBIT_AMAL_PASSWORD_SHA256 }}
-          ORBIT_AADIL_PASSWORD_SHA256: ${{ secrets.ORBIT_AADIL_PASSWORD_SHA256 }}
-          ORBIT_ANEESH_PASSWORD_SHA256: ${{ secrets.ORBIT_ANEESH_PASSWORD_SHA256 }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          ORBIT_GMAIL_REFRESH_TOKEN: ${{ secrets.ORBIT_GMAIL_REFRESH_TOKEN }}
-          ORBIT_GMAIL_EMAIL: ${{ secrets.ORBIT_GMAIL_EMAIL }}
-          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+      - name: Verify application
+        working-directory: comit
+        run: npm run verify
+      - name: Build Cloudflare Worker
+        working-directory: comit
+        run: npm run cf:build
