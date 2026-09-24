@@ -8,6 +8,7 @@
 5. Human approval is required for material outbound actions.
 6. Every retry is idempotent.
 7. Supabase remains the source of truth.
+8. Protect sender reputation before optimizing send volume.
 
 ## Workflow catalog
 
@@ -27,14 +28,32 @@ business model → geography → service fit → company signals → contactabil
 
 ### Cold Mail Engine
 Trigger: approved prospect.
-load intelligence → personalized draft → quality checks → human approval → Gmail send → save metadata → schedule follow-up.
+load intelligence → personalized draft → quality checks → human approval → authenticated business-domain send → save metadata → schedule follow-up.
 
 Rules:
-- Prism of Stories sender identity
-- no Orbit links
-- opt-out language
-- no fabricated claims
-- prevent duplicate outreach
+- Use a real Prism of Stories business-domain sender identity, not a free @gmail.com From address for prospecting when possible.
+- SPF, DKIM and DMARC must be configured and aligned for the sending domain.
+- Prefer a dedicated outreach subdomain/mailbox separated from critical transactional/client mail.
+- Send plain, truthful, personalized messages at a controlled rate.
+- No deceptive subjects, fake replies, misleading display names or hidden content.
+- Do not add internal team members to CC on prospect messages by default; keep the conversation one-to-one.
+- Include a simple opt-out path and immediately suppress opted-out prospects.
+- Never send to purchased lists or recipients without a legitimate reason to receive the outreach.
+- No Orbit links.
+- No fabricated claims.
+- Prevent duplicate outreach.
+
+### Deliverability Guard
+Before sending:
+1. Confirm sender domain authentication.
+2. Confirm From domain matches the authenticated SPF/DKIM domain.
+3. Confirm recipient is contactable and not suppressed.
+4. Enforce per-mailbox daily/hourly limits and gradual volume increases.
+5. Stop or slow sending when bounce, complaint or deferral rates rise.
+6. Record provider response and message ID.
+7. Monitor Gmail Postmaster Tools for authentication, spam rate and domain/IP reputation.
+
+Important: COMIT cannot force a recipient's Gmail/Outlook system to mark a message as "Important" or place it in Inbox. Deliverability is earned through authentication, reputation, recipient engagement and appropriate sending behavior.
 
 ### Follow-up Engine
 Trigger: due follow-up.
