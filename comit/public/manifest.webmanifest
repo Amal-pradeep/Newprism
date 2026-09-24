@@ -1,9 +1,9 @@
 {
-  "name": "COMIT — Prism of Stories",
+  "name": "COMIT × Lunes AI",
   "short_name": "COMIT",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#090812",
-  "theme_color": "#090812",
-  "description": "AI business operating system for Prism of Stories."
+  "background_color": "#030611",
+  "theme_color": "#2f6bff",
+  "description": "The revenue and operations command center for taking Lunes AI to market."
 }
