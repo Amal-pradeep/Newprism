@@ -5,7 +5,7 @@ const users=[
   {email:"amalpradeep25@gmail.com",name:"Amal"},
   {email:process.env.COMIT_AADIL_EMAIL || "aadil.sudhir279@gmail.com",name:"Aadil"},
   {email:process.env.COMIT_ANEESH_EMAIL || "msaneeshnath@gmail.com",name:"Aneesh"},
-  {email:process.env.COMIT_JISHNU_EMAIL || "jishnu@prismofstories.com",name:"Jishnu"},
+  {email:process.env.COMIT_JISHNU_EMAIL || "jishnu.01010011@gmail.com",name:"Jishnu"},
 ];
 function secret(){return process.env.COMIT_SESSION_SECRET||process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.GOOGLE_CLIENT_SECRET||""}
 function sign(payload:string){const s=secret();if(!s)throw new Error("COMIT session signing is not configured.");return createHmac("sha256",s).update(payload).digest("base64url")}
