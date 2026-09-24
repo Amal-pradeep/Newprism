@@ -22,4 +22,20 @@ This log records substantive product, engineering, operations, and deployment wo
 - The local Workers preview returned HTTP 200 for `/` and `/api/health`.
 - GitHub Actions passed for COMIT CI and COMIT Cloudflare validation on commit `121b284`.
 
-**Deployment status:** Not deployed to Cloudflare production. Cloudflare runtime credentials and bindings were not configured or verified by this change.
+**Deployment status:** At the time of this foundation change, no Cloudflare Worker existed and runtime credentials/settings had not been configured.
+
+## 2026-09-24 — Live Cloudflare Workers deployment
+
+**Request:** Publish COMIT from `cloudflare-migration` and verify a public link without changing `main`.
+
+**What changed:**
+- Deployed commit `68da33d` to the Cloudflare Worker `comit`.
+- Cloudflare assigned the public `workers.dev` URL recorded in the README. No custom domain was configured.
+- The first deploy attempt hit a Windows permission error while clearing a pre-existing generated build directory. Retried successfully from a clean detached checkout; the existing checkout and `main` were left untouched.
+
+**Verification:**
+- A clean `npm ci` completed and `npm run cf:deploy` completed successfully. Next.js production build, TypeScript validation during build, OpenNext packaging, asset upload, and Worker deployment all passed.
+- Live GET requests returned HTTP 200 for `/`, `/login`, and `/api/health`; the health response reported `ok: true` and service `COMIT`.
+- Dependency installation reported two audit findings (one moderate and one high); they were not changed as part of this deployment.
+
+**Deployment status and limits:** The Worker is live at the public `workers.dev` URL, version `fc76a43c-b4d6-487d-a2a2-04c8cda95e6e`. No COMIT integration settings/secrets were present or added, so Supabase, n8n, Gmail, and session-backed workflows are not configured on this deployment. This confirms the live app shell and health endpoint only; it does not complete the production readiness checklist. The documented Vercel production target and `main` remain unchanged.
