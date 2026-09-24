@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: comit-prism
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run typecheck && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NEXT_TELEMETRY_DISABLED
+        value: 1
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: N8N_WEBHOOK_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
