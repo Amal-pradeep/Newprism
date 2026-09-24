@@ -1,0 +1,33 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "comit-orbit",
+  "main": "cloudflare-entry.mjs",
+  "compatibility_date": "2026-09-24",
+  "workers_dev": true,
+  "preserve_file_names": true,
+  "find_additional_modules": true,
+  "rules": [
+    {
+      "type": "Data",
+      "globs": [
+        "index.html",
+        "outreach.js",
+        "monitoring.js",
+        "orbit-ux.js",
+        "orbit-v2.js",
+        "manifest.webmanifest",
+        "icon.svg"
+      ]
+    }
+  ],
+  "secrets": {
+    "required": [
+      "ORBIT_SESSION_SECRET",
+      "ORBIT_AMAL_PASSWORD_SHA256",
+      "ORBIT_AADIL_PASSWORD_SHA256",
+      "ORBIT_ANEESH_PASSWORD_SHA256",
+      "GOOGLE_CLIENT_ID",
+      "GOOGLE_CLIENT_SECRET"
+    ]
+  }
+}
