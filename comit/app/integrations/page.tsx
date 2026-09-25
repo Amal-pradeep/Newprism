@@ -1,5 +1,23 @@
-"use client";
-import {useEffect,useState} from "react";
-import {CheckCircle2,ExternalLink,Instagram,MessageCircle,TriangleAlert} from "lucide-react";
-export default function Integrations(){const [data,setData]=useState<any>(null);useEffect(()=>{fetch("/api/integrations").then(r=>r.json()).then(setData)},[]);const items=data?.integrations||{};return <main className="min-h-screen p-5 lg:p-8"><div className="mx-auto max-w-6xl"><p className="text-sm text-[var(--prism-muted)]">CONNECTIVITY LAYER</p><h1 className="mt-1 text-3xl font-semibold">Business integrations</h1><p className="mt-2 max-w-3xl text-sm text-[var(--prism-muted)]">COMIT treats external channels as evidence and execution surfaces. OAuth is required before private Meta/Instagram or WhatsApp Business data can be accessed.</p><div className="mt-7 grid gap-4 md:grid-cols-2">{Object.entries(items).map(([key,v]:any)=><article key={key} className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><div className="flex items-start justify-between gap-4"><div><h2 className="font-semibold capitalize">{v.name||key}</h2><p className="mt-2 text-xs text-[var(--prism-muted)]">{v.status}</p></div>{String(v.status).includes("OAuth")?<TriangleAlert size={18}/>:<CheckCircle2 size={18}/>}</div>{v.url&&<a href={v.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 text-xs underline">{key==="instagram"?<Instagram size={14}/>:<ExternalLink size={14}/>}Open</a>}{key==="whatsapp"&&<a href="https://wa.me/919745643726" target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-medium text-black"><MessageCircle size={14}/>Customer chat</a>}</article>)}</div><div className="mt-6 rounded-2xl border border-[var(--prism-border)] p-5 text-sm text-[var(--prism-muted)]">Architecture: COMIT UI → Next.js API → Supabase data → self-hosted n8n worker → approved Gmail/Meta/Instagram/WhatsApp actions. No paid API is activated by this layer.</div></div></main>
-}
+import Link from "next/link";
+import {ExternalLink,Instagram,Mail,MessageCircle,ShieldAlert,Workflow} from "lucide-react";
+
+const publicLinks=[
+  {name:"Prism of Stories website",status:"Public link only; no COMIT integration",url:"https://prismofstories.com",icon:ExternalLink},
+  {name:"Instagram",status:"Public profile only; OAuth is not connected",url:"https://instagram.com/prismofstories",icon:Instagram},
+  {name:"WhatsApp",status:"Public click-to-chat only; team accounts are not connected",url:"https://wa.me/919745643726",icon:MessageCircle},
+];
+const blocked=[
+  {name:"Supabase",status:"Not configured; CRM data endpoints are unavailable"},
+  {name:"Gmail",status:"Not configured; sending and synchronization are disabled"},
+  {name:"n8n",status:"Blocked; external workflow calls are disabled"},
+  {name:"AI provider",status:"Deterministic local logic only; external model calls are blocked"},
+  {name:"Cloudflare billing plan",status:"Unverified; no zero-billing guarantee can be made yet"},
+];
+
+export default function Integrations(){return <main className="min-h-screen bg-[var(--prism-bg)] p-5 pb-24 text-[var(--prism-text)] lg:p-8"><div className="mx-auto max-w-6xl">
+  <p className="text-xs tracking-wide text-[var(--prism-muted)]">CONNECTIVITY LAYER</p><h1 className="mt-1 text-3xl font-semibold">Business integrations</h1><p className="mt-2 max-w-3xl text-sm text-[var(--prism-muted)]">This inventory is explicit and read-only. A public profile link does not mean a private API is connected.</p>
+  <div className="mt-5 flex items-start gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm"><ShieldAlert size={18} className="shrink-0"/><p>Hard cost stop: no paid plans, metered overages, or usage-based AI. Keep integrations disabled until authentication and a provider-side no-charge limit are verified.</p></div>
+  <section className="mt-7"><h2 className="text-lg font-semibold">Public links</h2><div className="mt-3 grid gap-4 md:grid-cols-3">{publicLinks.map(({name,status,url,icon:Icon})=><article key={name} className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><Icon size={18}/><h3 className="mt-3 font-medium">{name}</h3><p className="mt-1 text-xs text-[var(--prism-muted)]">{status}</p><a href={url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 text-xs underline">Open link <ExternalLink size={13}/></a></article>)}</div></section>
+  <section className="mt-7"><h2 className="text-lg font-semibold">Disabled or unverified</h2><div className="mt-3 grid gap-3 md:grid-cols-2">{blocked.map(item=><article key={item.name} className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-4"><div className="flex items-start gap-3"><Workflow size={17} className="mt-0.5 text-amber-300"/><div><h3 className="text-sm font-medium">{item.name}</h3><p className="mt-1 text-xs text-[var(--prism-muted)]">{item.status}</p></div></div></article>)}</div></section>
+  <p className="mt-6 text-sm text-[var(--prism-muted)]">Run only local workflows while these connections are unavailable. See <Link href="/automation" className="underline">Automation</Link> for what works without external services.</p>
+</div></main>}
