@@ -29,8 +29,8 @@ export function routeAgent(task:string):AgentId{
  return "marketing";
 }
 
-export function draftForAgent(agent:AgentId,task:string,context:Record<string,unknown>={}){
- const brief=buildBusinessResponse(task,context);
+export function draftForAgent(agent:AgentId,task:string,context:Record<string,unknown>={},approvedLessons:string[]=[]){
+ const brief=buildBusinessResponse(task,{...context,outcome:approvedLessons.join(" ").slice(0,400)||(typeof context.outcome==="string"?context.outcome:"")});
  const spec=agentSpecs.find(x=>x.id===agent)!;
  const safe=(value:unknown)=>typeof value==="string"?value.trim().slice(0,300):"";
  const baseline=safe(context.baseline),current=safe(context.current);
@@ -47,6 +47,6 @@ export function draftForAgent(agent:AgentId,task:string,context:Record<string,un
  };
  const handoff=agent==="support"&&/churn|cancel|unhappy|competitor/.test(task.toLowerCase())
    ? {to:"sales" as AgentId,reason:"Possible retention risk. Review the support facts before asking SalesAgent for a retention draft."}:null;
- return {agent,owner:spec.owner,kind:"reviewable-draft",brief,artifact,review_required:true,external_action_taken:false,handoff,
+ return {agent,owner:spec.owner,kind:"reviewable-draft",brief,artifact,approved_lessons:approvedLessons,review_required:true,external_action_taken:false,handoff,
   caution:agent==="bi"?"A trend cannot be verified until metric values and time windows are supplied.":agent==="support"?"Check the relevant customer policy and account facts before replying.":"Confirm all facts before external use."};
 }
