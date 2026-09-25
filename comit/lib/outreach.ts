@@ -1,5 +1,6 @@
 import {supabaseAdmin} from "@/lib/supabase";
 import {createHmac,timingSafeEqual} from "crypto";
+import {teamUser} from "@/lib/team-auth";
 export const AMAL_EMAIL="amalpradeep25@gmail.com";
 export const AADIL_EMAIL="aadil.sudhir279@gmail.com";
 // Prefer an authenticated business-domain mailbox (for example outreach@prismofstories.com)
@@ -8,9 +9,9 @@ export const SENDER_EMAIL=process.env.COMIT_OUTREACH_FROM||process.env.ORBIT_GMA
 export const REPLY_TO_EMAIL=process.env.COMIT_OUTREACH_REPLY_TO||SENDER_EMAIL;
 export type CometUser={email:string;name?:string};
 const JISHNU_EMAIL=process.env.COMIT_JISHNU_EMAIL||"jishnu.01010011@gmail.com";
-function sessionSecret(){return process.env.COMIT_SESSION_SECRET||process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.GOOGLE_CLIENT_SECRET||""}
+function sessionSecret(){return process.env.COMIT_SESSION_SECRET||""}
 function validSignature(payload:string,signature:string){const secret=sessionSecret();if(!secret)return false;const expected=createHmac("sha256",secret).update(payload).digest("base64url");try{return expected.length===signature.length&&timingSafeEqual(Buffer.from(expected),Buffer.from(signature))}catch{return false}}
-export function getSessionUser(req:Request):CometUser|null{const raw=req.headers.get("cookie")||"";const match=raw.match(/(?:^|;\s*)comit_session=([^;]+)/);if(!match)return null;try{const token=decodeURIComponent(match[1]);const [payload,signature]=token.split(".");if(!payload||!signature||!validSignature(payload,signature))return null;const decoded=JSON.parse(Buffer.from(payload,"base64url").toString("utf8"));const issued=Number(decoded.iat||0);if(!issued||Date.now()-issued>604800000)return null;const email=String(decoded.email||"").toLowerCase();if(![AMAL_EMAIL,AADIL_EMAIL,"msaneeshnath@gmail.com",JISHNU_EMAIL].includes(email))return null;return{email,name:decoded.name}}catch{return null}}
+export function getSessionUser(req:Request):CometUser|null{const raw=req.headers.get("cookie")||"";const match=raw.match(/(?:^|;\s*)comit_session=([^;]+)/);if(!match)return null;try{const token=decodeURIComponent(match[1]);const [payload,signature]=token.split(".");if(!payload||!signature||!validSignature(payload,signature))return null;const decoded=JSON.parse(Buffer.from(payload,"base64url").toString("utf8"));const issued=Number(decoded.iat||0);if(!issued||issued>Date.now()+60000||Date.now()-issued>604800000)return null;const user=teamUser(String(decoded.email||""));if(!user)return null;return{email:user.email,name:user.name}}catch{return null}}
 export function isApprover(user:CometUser|null){return!!user&&[AMAL_EMAIL,AADIL_EMAIL].includes(user.email.toLowerCase())}
 export function isRestaurantProspect(prospect:any){const industry=String(prospect?.metadata?.industry||prospect?.companies?.industry||"").toLowerCase();return /restaurant|hospitality|cafe|f&b|food/.test(industry)}
 export function outreachBody(prospect:any){
