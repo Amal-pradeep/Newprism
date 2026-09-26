@@ -1,141 +1,39 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ExternalLink, Mail, Search, ShieldCheck, Sparkles, XCircle } from "lucide-react";
+import {useEffect,useMemo,useState} from "react";
+import {CheckCircle2,Download,ExternalLink,Mail,Plus,Search,ShieldCheck,Sparkles,Trash2,XCircle} from "lucide-react";
 
-type Prospect = {
-  id: string;
-  name: string;
-  email: string | null;
-  stage: string;
-  score: number;
-  source: string | null;
-  notes: string | null;
-  metadata: any;
-  companies?: { name?: string; website?: string; industry?: string; location?: string } | null;
-  approvals?: any[];
-};
+import {todayProspects,PROSPECT_BATCH} from "@/lib/today-prospects";
 
-export default function ProspectsPage() {
-  const [prospects, setProspects] = useState<Prospect[]>([]);
-  const [user, setUser] = useState<{ email: string; name?: string } | null>(null);
-  const [q, setQ] = useState("");
-  const [busy, setBusy] = useState("");
-  const [message, setMessage] = useState("");
-  const [winPlan, setWinPlan] = useState<any>(null);
+type DraftStatus="pending"|"rejected"|"approved-local";
+type Prospect={id:string;name:string;email:string;industry:string;location:string;stage:string;score:number;source:string;notes:string;draft?:{status:DraftStatus;subject:string;body:string;updatedAt:string}};
+const STORAGE_KEY="comit.localProspects.v1";
+const emptyForm={name:"",email:"",industry:"",location:"",source:"",notes:""};
+function readProspects():Prospect[]{try{const parsed=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");return Array.isArray(parsed)?parsed:[]}catch{return[]}}
+function score(p:typeof emptyForm){return Math.min(100,(p.industry?25:0)+(p.location?20:0)+(p.email?25:0)+(p.source?20:0)+(p.notes?10:0))}
+function makeDraft(p:Prospect){return `Hi ${p.name} team,\n\nI was researching your work${p.industry?` in ${p.industry}`:""}${p.location?` in ${p.location}`:""}.\n\nPrism of Stories helps teams improve digital growth through practical creative, web and marketing systems. Based on the information recorded so far, we would like to understand your current creative priorities before suggesting a project.\n\nIf useful, I can share a short set of ideas for your team to review.\n\nWould a brief conversation be useful?\n\nRegards,\nAmal Pradeep\nPrism of Stories\n\nIf this is not relevant, let us know and we will not follow up.`}
 
-  async function load() {
-    const r = await fetch("/api/prospects", { cache: "no-store" });
-    const d = await r.json();
-    if (r.ok) {
-      setProspects(d.data || []);
-      setUser(d.user || null);
-    } else setMessage(d.error || "Could not load prospect database.");
-  }
-
-  useEffect(() => { load(); }, []);
-
-  const filtered = useMemo(() => {
-    const query = q.toLowerCase().trim();
-    if (!query) return prospects;
-    return prospects.filter(p => [p.name, p.email, p.metadata?.industry, p.metadata?.location, p.notes].join(" ").toLowerCase().includes(query));
-  }, [prospects, q]);
-
-  async function showWinPlan(id: string) { setBusy(id); setMessage(""); const r=await fetch(`/api/win-strategy?prospectId=${encodeURIComponent(id)}`,{cache:"no-store"}); const d=await r.json(); setWinPlan(r.ok?d:null); setMessage(r.ok?"Win strategy generated from current account evidence.":d.error||"Could not build win strategy."); setBusy(""); }
-
-  async function prepare(id: string) {
-    setBusy(id); setMessage("");
-    const r = await fetch("/api/outreach", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "prepare", prospectId: id }) });
-    const d = await r.json();
-    setMessage(r.ok ? "Cold email prepared and added to the approval queue." : d.error || "Could not prepare email.");
-    setBusy("");
-    load();
-  }
-
-  async function decide(approvalId: string, action: "approve" | "reject") {
-    setBusy(approvalId); setMessage("");
-    const r = await fetch("/api/outreach", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, approvalId }) });
-    const d = await r.json();
-    setMessage(r.ok ? (action === "approve" ? "Approved: email sent from prismofstories25@gmail.com." : "Outreach rejected.") : d.error || "Operation failed.");
-    setBusy("");
-    load();
-  }
-
-  return (
-    <main className="min-h-screen bg-[var(--prism-bg)] text-[var(--prism-text)] p-5 lg:p-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-7 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm text-[var(--prism-muted)]">CRM · RESEARCH · OUTREACH</p>
-            <h1 className="text-3xl font-semibold">Prospect Command Center</h1>
-            <p className="mt-1 max-w-3xl text-sm text-[var(--prism-muted)]">COMIT researches prospects, stores the evidence and prepares personalized outreach. External email never sends without an Amal or Aadil approval.</p>
-          </div>
-          <div className="flex items-center gap-2 rounded-xl border border-[var(--prism-border)] bg-[var(--prism-surface)] px-3 py-2 text-xs">
-            <ShieldCheck size={15} />
-            Approval authority: Amal + Aadil
-          </div>
-        </div>
-
-        {winPlan && <section className="mb-5 rounded-2xl border border-violet-400/30 bg-violet-500/5 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs text-[var(--prism-muted)]">WIN STRATEGY ENGINE</p><h2 className="text-xl font-semibold">{winPlan.prospect?.name || "Account"} · {winPlan.plan.win_score}/100</h2><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.strategy}</p></div><button onClick={()=>setWinPlan(null)} className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs">Close</button></div><div className="mt-4 grid gap-4 lg:grid-cols-2"><div><h3 className="text-sm font-medium">Opening</h3><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.opening}</p><h3 className="mt-4 text-sm font-medium">Value hypothesis</h3><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.value_hypothesis}</p><h3 className="mt-4 text-sm font-medium">Next action</h3><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.next_action}</p></div><div><h3 className="text-sm font-medium">Research gaps</h3><ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-[var(--prism-muted)]">{winPlan.plan.research_gaps.map((x:string)=><li key={x}>{x}</li>)}</ul><h3 className="mt-4 text-sm font-medium">Discovery</h3><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.discovery_questions.slice(0,5).join(" · ")}</p></div></div></section>}
-
-        <div className="mb-5 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><div className="text-xs text-[var(--prism-muted)]">Research database</div><div className="mt-2 text-3xl font-semibold">{prospects.length}</div></div>
-          <div className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><div className="text-xs text-[var(--prism-muted)]">Verified public emails</div><div className="mt-2 text-3xl font-semibold">{prospects.filter(p => p.email).length}</div></div>
-          <div className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><div className="text-xs text-[var(--prism-muted)]">Pending approvals</div><div className="mt-2 text-3xl font-semibold">{prospects.reduce((n,p)=>n+(p.approvals||[]).filter(a=>a.status==="pending").length,0)}</div></div>
-        </div>
-
-        {message && <div className="mb-5 rounded-xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-3 text-sm">{message}</div>}
-
-        <div className="mb-5 flex items-center gap-3 rounded-xl border border-[var(--prism-border)] bg-[var(--prism-surface)] px-4 py-3">
-          <Search size={17} className="text-[var(--prism-muted)]" />
-          <input aria-label="Search prospects" value={q} onChange={e=>setQ(e.target.value)} placeholder="Search companies, sectors, email or research notes…" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--prism-muted)]" />
-          <span className="whitespace-nowrap text-xs text-[var(--prism-muted)]">{user?.email}</span>
-        </div>
-
-        <div className="space-y-3">
-          {filtered.map(p => {
-            const pending = (p.approvals || []).find(a => a.status === "pending");
-            const latest = (p.approvals || []).slice().sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))[0];
-            return (
-              <article key={p.id} className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-lg font-medium">{p.name}</h2>
-                      <span className="rounded-full bg-white/5 px-2 py-1 text-xs">{p.score}/100 fit</span>
-                      <span className="rounded-full bg-white/5 px-2 py-1 text-xs capitalize">{p.stage}</span>
-                    </div>
-                    <p className="mt-2 text-sm text-[var(--prism-muted)]">{p.metadata?.fit_reason || p.notes}</p>
-                    <div className="mt-3 flex flex-wrap gap-4 text-xs text-[var(--prism-muted)]">
-                      <span>{p.metadata?.industry || "Industry not set"}</span>
-                      <span>{p.metadata?.location || "Location not set"}</span>
-                      <span>{p.email || "Public email still needs verification"}</span>
-                      {p.source && <a href={p.source} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-white hover:underline">Research source <ExternalLink size={12}/></a>}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <button disabled={busy===p.id} onClick={()=>showWinPlan(p.id)} className="inline-flex items-center gap-2 rounded-xl border border-violet-400/30 px-3 py-2 text-xs hover:bg-violet-500/10"><Sparkles size={14}/> {busy===p.id ? "Researching…" : "Build Win Strategy"}</button>\n                    {!pending && p.email && <button disabled={busy===p.id} onClick={()=>prepare(p.id)} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs hover:bg-white/5"><Mail size={14}/> {busy===p.id ? "Preparing…" : "Prepare cold email"}</button>}
-                    {!p.email && <span className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs text-[var(--prism-muted)]">Verify email first</span>}
-                  </div>
-                </div>
-
-                {pending && <div className="mt-4 rounded-xl border border-violet-400/30 bg-violet-500/5 p-4">
-                  <div className="mb-3 flex items-center gap-2 text-sm font-medium"><Sparkles size={15}/> Approval requested by {pending.requested_by}</div>
-                  <div className="text-xs text-[var(--prism-muted)]">To: {pending.to_email} · CC: {(pending.cc_emails || []).join(", ")}</div>
-                  <div className="mt-3 whitespace-pre-wrap rounded-lg bg-black/20 p-3 text-sm">{pending.body}</div>
-                  <div className="mt-3 flex gap-2">
-                    <button disabled={busy===pending.id} onClick={()=>decide(pending.id,"approve")} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-black"><CheckCircle2 size={15}/> {busy===pending.id ? "Sending…" : "Approve & Send"}</button>
-                    <button disabled={busy===pending.id} onClick={()=>decide(pending.id,"reject")} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-4 py-2 text-sm"><XCircle size={15}/> Reject</button>
-                  </div>
-                </div>}
-
-                {!pending && latest?.status === "sent" && <div className="mt-4 flex items-center gap-2 text-xs text-emerald-300"><CheckCircle2 size={14}/> Sent from prismofstories25@gmail.com · approved by {latest.approved_by}</div>}
-              </article>
-            );
-          })}
-        </div>
-      </div>
-    </main>
-  );
+export default function ProspectsPage(){
+  const [prospects,setProspects]=useState<Prospect[]>([]),[query,setQuery]=useState(""),[adding,setAdding]=useState(false),[form,setForm]=useState(emptyForm),[message,setMessage]=useState(""),[winPlan,setWinPlan]=useState<Prospect|null>(null);
+  useEffect(()=>{const saved=readProspects();const key="comit.batch."+PROSPECT_BATCH;if(!localStorage.getItem(key)){const merged=[...saved,...todayProspects.filter(p=>!saved.some(x=>x.id===p.id||x.email.toLowerCase()===p.email.toLowerCase()))];localStorage.setItem(STORAGE_KEY,JSON.stringify(merged));localStorage.setItem(key,"loaded");setProspects(merged)}else setProspects(saved)},[]);
+  function persist(next:Prospect[]){localStorage.setItem(STORAGE_KEY,JSON.stringify(next));setProspects(next)}
+  const filtered=useMemo(()=>{const q=query.trim().toLowerCase();return q?prospects.filter(p=>[p.name,p.email,p.industry,p.location,p.notes].join(" ").toLowerCase().includes(q)):prospects},[prospects,query]);
+  function createProspect(event:React.FormEvent){event.preventDefault();const name=form.name.trim();if(!name){setMessage("Add a company or contact name first.");return}const item:Prospect={...form,id:crypto.randomUUID(),name,email:form.email.trim(),stage:"new",score:score(form)};persist([item,...prospects]);setForm(emptyForm);setAdding(false);setMessage(`${item.name} saved in this browser.`)}
+  function prepare(id:string){const p=prospects.find(x=>x.id===id);if(!p)return;const next=prospects.map(x=>x.id===id?{...x,draft:{status:"pending" as const,subject:`A few growth ideas for ${x.name}`,body:makeDraft(x),updatedAt:new Date().toISOString()}}:x);persist(next);setMessage("Draft prepared locally. No message was sent.")}
+  function decide(id:string,decision:"reject"|"approve"){const next=prospects.map(x=>x.id===id&&x.draft?{...x,draft:{...x.draft,status:decision==="reject"?"rejected" as const:"approved-local" as const,updatedAt:new Date().toISOString()}}:x);persist(next);setMessage(decision==="reject"?"Draft rejected and retained in the local record.":"Marked approved locally. Sending is disabled until secure sign-in and a verified zero-cost Gmail limit are configured.")}
+  function remove(id:string){const item=prospects.find(p=>p.id===id);if(!item||!window.confirm(`Delete ${item.name} from this browser?`))return;persist(prospects.filter(p=>p.id!==id));setMessage(`${item.name} removed from this browser.`)}
+  function exportCsv(){const escape=(v:string)=>{const safe=/^[\s]*[=+\-@]/.test(String(v))?`'${v}`:String(v);return `"${safe.replaceAll('"','""')}"`};const rows=[["Name","Email","Industry","Location","Stage","Score","Source","Notes"],...prospects.map(p=>[p.name,p.email,p.industry,p.location,p.stage,String(p.score),p.source,p.notes])];const blob=new Blob([rows.map(row=>row.map(escape).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="comit-local-prospects.csv";link.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);setMessage("CSV exported from this browser.")}
+  return <main className="min-h-screen bg-[var(--prism-bg)] p-5 pb-24 text-[var(--prism-text)] lg:p-8"><a href="/prospects/shared" className="mb-4 inline-block text-xs text-[var(--prism-muted)] underline">Connected team workspace (sign-in required)</a><div className="mx-auto max-w-7xl">
+    <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs tracking-wide text-[var(--prism-muted)]">CRM · RESEARCH · OUTREACH</p><h1 className="mt-1 text-3xl font-semibold">Prospect Command Center</h1><p className="mt-1 max-w-3xl text-sm text-[var(--prism-muted)]">Five researched Dubai prospects · 26 September 2026. Public source links are included. Your notes, stages and drafts are saved on this device.</p></div><div className="flex flex-wrap gap-2"><button onClick={()=>setAdding(x=>!x)} className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-medium text-black"><Plus size={15}/>{adding?"Close form":"Add prospect"}</button><button onClick={exportCsv} disabled={!prospects.length} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-sm disabled:opacity-40"><Download size={15}/>Export CSV</button></div></div>
+    <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm"><ShieldCheck size={17} className="shrink-0"/><p>The researched shortlist is included for every teammate. Changes and drafts stay on this device; export CSV for handoff. Public contact details are not consent to marketing email.</p></div>
+    {message&&<p role="status" className="mb-5 rounded-xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-3 text-sm">{message}</p>}
+    {adding&&<form onSubmit={createProspect} className="mb-5 grid gap-3 rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5 sm:grid-cols-2"><label className="text-sm">Company or contact<input autoFocus required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1 w-full rounded-lg border border-[var(--prism-border)] bg-black/20 px-3 py-2"/></label><label className="text-sm">Public email<input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} className="mt-1 w-full rounded-lg border border-[var(--prism-border)] bg-black/20 px-3 py-2"/></label><label className="text-sm">Industry<input value={form.industry} onChange={e=>setForm({...form,industry:e.target.value})} className="mt-1 w-full rounded-lg border border-[var(--prism-border)] bg-black/20 px-3 py-2"/></label><label className="text-sm">Location<input value={form.location} onChange={e=>setForm({...form,location:e.target.value})} className="mt-1 w-full rounded-lg border border-[var(--prism-border)] bg-black/20 px-3 py-2"/></label><label className="text-sm sm:col-span-2">Evidence/source URL<input type="url" value={form.source} onChange={e=>setForm({...form,source:e.target.value})} className="mt-1 w-full rounded-lg border border-[var(--prism-border)] bg-black/20 px-3 py-2"/></label><label className="text-sm sm:col-span-2">Research notes<textarea rows={3} value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} className="mt-1 w-full rounded-lg border border-[var(--prism-border)] bg-black/20 px-3 py-2"/></label><div className="flex gap-2 sm:col-span-2"><button className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black">Save locally</button><button type="button" onClick={()=>{setAdding(false);setForm(emptyForm)}} className="rounded-xl border border-[var(--prism-border)] px-4 py-2 text-sm">Cancel</button></div></form>}
+    {winPlan&&<section className="mb-5 rounded-2xl border border-violet-400/30 bg-violet-500/5 p-5"><div className="flex items-center justify-between"><div><p className="text-xs text-[var(--prism-muted)]">EVIDENCE-BASED WIN PLAN · LOCAL RULES</p><h2 className="text-xl font-semibold">{winPlan.name} · {winPlan.score}/100</h2></div><button onClick={()=>setWinPlan(null)} className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs">Close</button></div><p className="mt-3 text-sm">Next step: verify the missing company evidence, then decide whether the identified need fits Prism of Stories.</p><p className="mt-2 text-sm text-[var(--prism-muted)]">Current evidence: {[winPlan.industry,winPlan.location,winPlan.source,winPlan.notes].filter(Boolean).join(" · ")||"No research evidence recorded."}</p><p className="mt-2 text-xs text-[var(--prism-muted)]">This is a deterministic checklist, not AI research or a verified business claim.</p></section>}
+    <div className="mb-5 grid gap-4 sm:grid-cols-3"><div className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><div className="text-xs text-[var(--prism-muted)]">Prospects on this device</div><div className="mt-2 text-3xl font-semibold">{prospects.length}</div></div><div className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><div className="text-xs text-[var(--prism-muted)]">Emails entered</div><div className="mt-2 text-3xl font-semibold">{prospects.filter(p=>p.email).length}</div></div><div className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><div className="text-xs text-[var(--prism-muted)]">Draft approvals</div><div className="mt-2 text-3xl font-semibold">{prospects.filter(p=>p.draft?.status==="pending").length}</div></div></div>
+    <div className="mb-5 flex items-center gap-3 rounded-xl border border-[var(--prism-border)] bg-[var(--prism-surface)] px-4 py-3"><Search size={17} className="text-[var(--prism-muted)]"/><input aria-label="Search prospects" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search companies, sectors, email or research notes…" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--prism-muted)]"/><span className="whitespace-nowrap text-xs text-[var(--prism-muted)]">{filtered.length} shown</span></div>
+    <div className="space-y-3">{filtered.map(p=><article key={p.id} className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="text-lg font-medium">{p.name}</h2><span className="rounded-full bg-white/5 px-2 py-1 text-xs">{p.score}/100 profile completeness</span><select aria-label={`Stage for ${p.name}`} value={p.stage} onChange={e=>persist(prospects.map(x=>x.id===p.id?{...x,stage:e.target.value}:x))} className="rounded-lg border border-[var(--prism-border)] bg-[var(--prism-surface)] px-2 py-1 text-xs">{["research","new","qualified","contacted","meeting","won","not-a-fit"].map(stage=><option key={stage}>{stage}</option>)}</select>{p.draft&&<span className="rounded-full bg-white/5 px-2 py-1 text-xs">Draft · {p.draft.status.replace("-"," ")}</span>}</div><p className="mt-2 text-sm text-[var(--prism-muted)]">{p.notes||"No research notes recorded."}</p><div className="mt-3 flex flex-wrap gap-4 text-xs text-[var(--prism-muted)]"><span>{p.industry||"Industry not set"}</span><span>{p.location||"Location not set"}</span><span>{p.email||"Email not verified"}</span>{p.source&&<a href={p.source} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline">Evidence source <ExternalLink size={12}/></a>}</div></div><div className="flex flex-wrap gap-2"><button onClick={()=>setWinPlan(p)} className="inline-flex items-center gap-2 rounded-xl border border-violet-400/30 px-3 py-2 text-xs"><Sparkles size={14}/>Build win plan</button>{p.email&&!p.draft&&<button onClick={()=>prepare(p.id)} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs"><Mail size={14}/>Prepare draft</button>}<button onClick={()=>remove(p.id)} aria-label={`Delete ${p.name}`} className="rounded-xl border border-[var(--prism-border)] p-2 text-xs"><Trash2 size={14}/></button></div></div>
+      {p.draft&&<div className="mt-4 rounded-xl border border-violet-400/20 p-4"><p className="text-xs text-[var(--prism-muted)]">{p.draft.subject} · saved locally · never sent</p><label className="mt-3 block text-xs">Edit draft<textarea aria-label={`Draft for ${p.name}`} rows={10} value={p.draft.body} onChange={e=>persist(prospects.map(x=>x.id===p.id&&x.draft?{...x,draft:{...x.draft,body:e.target.value,status:"pending",updatedAt:new Date().toISOString()}}:x))} className="mt-2 w-full rounded-xl border border-[var(--prism-border)] bg-transparent p-3 text-sm"/></label>{p.draft.status==="pending"&&<div className="mt-3 flex flex-wrap gap-2"><button onClick={()=>decide(p.id,"approve")} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs"><CheckCircle2 size={14}/>Mark approved locally</button><button onClick={()=>decide(p.id,"reject")} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs"><XCircle size={14}/>Reject draft</button></div>}{p.draft.status==="approved-local"&&<p className="mt-3 text-xs text-amber-300">Approved in this browser. Gmail is not connected and no message was sent.</p>}</div>}
+    </article>)}{!filtered.length&&<div className="rounded-2xl border border-dashed border-[var(--prism-border)] p-10 text-center"><p className="font-medium">{query?"No matching prospects":"No local prospects yet"}</p><p className="mt-2 text-sm text-[var(--prism-muted)]">Add a record to start. COMIT will keep it on this device and will not fetch or enrich it automatically.</p></div>}</div>
+  </div></main>;
 }
+
