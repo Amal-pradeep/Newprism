@@ -2,10 +2,11 @@
 
 import {useEffect, useState} from "react";
 import Link from "next/link";
-import {Activity, ArrowUpRight, Bell, Bot, Mail, ShieldCheck, Sparkles, Target, Users, Workflow, Clapperboard} from "lucide-react";
+import {Activity, ArrowUpRight, Bell, Bot, Mail, ShieldCheck, Sparkles, Target, Users, Workflow, Clapperboard, Database} from "lucide-react";
 import ComitAssistant from "@/components/comit-assistant";
 
 const cards=[
+  ["Shared Workspace","Team updates and private sign-in","/workspace",Database],
   ["Prospects","Research and qualify accounts","/prospects",Target],
   ["Outreach","Review drafts and follow-ups","/outreach",Mail],
   ["Team","Ownership and check-ins","/team",Users],
@@ -51,9 +52,10 @@ export default function CommandCenter(){
       <ComitAssistant/>
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.35fr_1fr]">
         <section className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><div className="flex items-center gap-2"><Activity size={17}/><h2 className="font-medium">Revenue loop</h2></div><p className="mt-2 text-sm text-[var(--prism-muted)]">Research evidence, qualify fit, prepare work for review, then record the result. COMIT does not send, publish, or spend automatically.</p><div className="mt-4 flex flex-wrap gap-2"><Link href="/prospects" className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-sm">Open prospects</Link><Link href="/automation" className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-sm">Review automation</Link></div></section>
-        <section className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-5"><div className="flex items-center gap-2"><ShieldCheck size={17}/><h2 className="font-medium">Ready for today</h2></div><p className="mt-2 text-sm text-[var(--prism-muted)]">Start with five researched prospects, assign the next action, and collect video references in Shahid’s Creative Library. Email sending is paused.</p></section>
+        <section className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-5"><div className="flex items-center gap-2"><ShieldCheck size={17}/><h2 className="font-medium">Ready for today</h2></div><p className="mt-2 text-sm text-[var(--prism-muted)]">Sign in to Shared Workspace to assign five researched prospects, post check-ins and share creative references. Email sending is paused.</p></section>
       </div>
       <section className="mt-5 rounded-2xl border border-violet-400/20 bg-violet-500/5 p-5"><div className="flex items-center gap-3"><Sparkles size={18}/><div><h2 className="font-medium">Next step</h2><p className="mt-1 text-sm text-[var(--prism-muted)]">{nudge}</p></div></div></section>
     </div>
   </main>;
 }
+

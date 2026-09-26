@@ -14,7 +14,15 @@
       "service": "comit"
     }
   ],
+  "d1_databases": [
+    {
+      "binding": "COMIT_DB",
+      "database_name": "comit-team",
+      "database_id": "dca7f965-103c-48c3-81fd-c6e4ee08d430"
+    }
+  ],
   "observability": {
     "enabled": true
   }
 }
+
