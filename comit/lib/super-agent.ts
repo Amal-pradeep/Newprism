@@ -21,7 +21,7 @@ export type SuperMission={
   maxSteps:number;
   humanApprovalRequiredFor:MissionRisk[];
   budget:{maxAgentRuns:number;maxModelDrafts:number;maxContextChars:number};
-  skill:{id:string;name:string;instructions:string[];success:string[]};
+  skill:{id:string;name:string;instructions:string[];success:string[];requiresApproval:boolean};
   stopConditions:string[];
   contextPolicy:string[];
   steps:MissionStep[];
@@ -84,7 +84,7 @@ export function buildSuperMission(task:string,context:Record<string,unknown>={})
     maxSteps:Math.min(8,steps.length),
     humanApprovalRequiredFor:["internal_write","external_write"],
     budget:{maxAgentRuns:Math.min(12,steps.length*2),maxModelDrafts:Math.min(4,Math.max(1,steps.length)),maxContextChars:12000},
-    skill:{id:skill.id,name:skill.name,instructions:skill.instructions,success:skill.success},
+    skill:{id:skill.id,name:skill.name,instructions:skill.instructions,success:skill.success,requiresApproval:skill.requiresApproval},
     stopConditions:[
       "Required evidence cannot be verified.",
       "A human approval gate is reached.",
