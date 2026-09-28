@@ -1,6 +1,6 @@
 import {normalizeSalesContext,type SalesContext} from "./sales-engine";
 
-export const salesOutcomes=["no_reply","negative_reply","positive_reply","meeting_booked","proposal_sent","won","lost"] as const;
+export const salesOutcomes=["delivery_failed","no_reply","negative_reply","positive_reply","meeting_booked","proposal_sent","won","lost"] as const;
 export type SalesOutcome=typeof salesOutcomes[number];
 
 export type TrainingLesson={
@@ -18,6 +18,7 @@ export const seedSalesLessons:TrainingLesson[]=[
   {id:"trigger-before-volume",agent:"research",lesson:"A current trigger or visible business change is more useful than a high generic lead score. Research urgency before prioritizing outreach.",tags:["research","trigger","priority"],outcome:"pattern",quality:95},
   {id:"proof-before-meeting",agent:"sales",lesson:"Give the prospect a concrete proof artifact before asking for a larger commitment; make the first step easy to evaluate.",tags:["proof","meeting","sales"],outcome:"pattern",quality:90},
   {id:"learn-from-outcome",agent:"followup",lesson:"Follow-ups should add new evidence, proof or a decision-process question. Do not repeat the same pitch.",tags:["followup","reply","learning"],outcome:"pattern",quality:94},
+  {id:"deliverability-before-followup",agent:"qualification",lesson:"A delivery failure is not a normal no-reply. Replace or verify the contact before another follow-up and do not count the failed send as a valid sales exposure.",tags:["email","deliverability","qualification"],outcome:"pattern",quality:96},
 ];
 
 function tokens(value:string){return new Set(value.toLowerCase().split(/[^a-z0-9]+/).filter(x=>x.length>2))}
@@ -35,7 +36,7 @@ export function selectTrainingLessons(agent:string,raw:Record<string,unknown>|Sa
 }
 
 export function outcomeWeight(outcome:SalesOutcome){
-  return {no_reply:-1,negative_reply:-2,positive_reply:3,meeting_booked:6,proposal_sent:7,won:10,lost:-4}[outcome];
+  return {delivery_failed:-3,no_reply:-1,negative_reply:-2,positive_reply:3,meeting_booked:6,proposal_sent:7,won:10,lost:-4}[outcome];
 }
 
 export function salesSwarmPlan(task:string){
