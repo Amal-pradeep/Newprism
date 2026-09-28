@@ -23,6 +23,7 @@ export async function GET(req:Request){
 
     const ids=(missions.data||[]).map((m:any)=>m.id);
     let children:any[]=[];
+    let missionEvents:any[]=[];
     if(ids.length){
       const response=await db.from("workflow_executions")
         .select("id,status,input,output,created_at,completed_at,error")
@@ -32,13 +33,22 @@ export async function GET(req:Request){
         .order("created_at",{ascending:true});
       if(response.error)throw response.error;
       children=response.data||[];
+      const eventResponse=await db.from("events")
+        .select("id,event_type,aggregate_id,payload,created_at")
+        .eq("organization_id",ORG_ID)
+        .eq("aggregate_type","super_agent_mission")
+        .in("aggregate_id",ids)
+        .order("created_at",{ascending:false}).limit(200);
+      if(eventResponse.error)throw eventResponse.error;
+      missionEvents=eventResponse.data||[];
     }
 
     const enriched=(missions.data||[]).map((mission:any)=>{
       const steps=children
         .filter((child:any)=>child.input?.context?.missionId===mission.id)
         .sort((a:any,b:any)=>Number(a.input?.context?.missionStepIndex||0)-Number(b.input?.context?.missionStepIndex||0));
-      return {...mission,steps,progress:missionProgress(steps)};
+      const events=missionEvents.filter((event:any)=>event.aggregate_id===mission.id).slice(0,12);
+      return {...mission,steps,events,progress:missionProgress(steps)};
     });
 
     const recentActivity=children.slice().sort((a:any,b:any)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime()).slice(0,12).map((step:any)=>({
