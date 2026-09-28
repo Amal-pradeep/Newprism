@@ -4,6 +4,7 @@ import {getSessionUser,isApprover,requireAdminDb} from "@/lib/outreach";
 import {buildSuperMission,missionProgress} from "@/lib/super-agent";
 import {capabilitySummary} from "@/lib/free-capabilities";
 import {skillSummary} from "@/lib/agent-skills";
+import {createTraceId,traceRecord} from "@/lib/agent-tracing";
 
 const ORG_ID="acda1757-1698-405a-8451-5674316ceeaf";
 export const dynamic="force-dynamic";
@@ -97,7 +98,8 @@ export async function POST(req:Request){
   try{
     const db=await requireAdminDb();
     const plan=buildSuperMission(task,context);
-    const missionInput={kind:"super_agent_mission",task,context,requested_by:user.email,plan};
+    const traceId=createTraceId();
+    const missionInput={kind:"super_agent_mission",task,context:{...context,traceId},requested_by:user.email,plan};
     const mission=await db.from("workflow_executions").insert({
       organization_id:ORG_ID,
       idempotency_key:randomUUID(),
@@ -123,7 +125,8 @@ export async function POST(req:Request){
           missionSuccess:step.success,
           missionRisk:step.risk,
           missionMaxAttempts:step.maxAttempts,
-          missionSkill:plan.skill
+          missionSkill:plan.skill,
+          traceId
         },
         agent:step.agent,
         requested_by:user.email
@@ -141,7 +144,7 @@ export async function POST(req:Request){
       event_type:"super_agent.mission.created",
       aggregate_type:"super_agent_mission",
       aggregate_id:mission.data.id,
-      payload:{requested_by:user.email,title:plan.title,steps:plan.steps.map(x=>({id:x.id,agent:x.agent,risk:x.risk}))}
+      payload:{requested_by:user.email,title:plan.title,trace:traceRecord(traceId,"mission.created",plan.title,{step_count:plan.steps.length,skill:plan.skill.name}),steps:plan.steps.map(x=>({id:x.id,agent:x.agent,risk:x.risk}))}
     });
 
     return NextResponse.json({ok:true,mission:{...mission.data,steps:children.data,plan},mode:"bounded-supervisor"},{status:201});
