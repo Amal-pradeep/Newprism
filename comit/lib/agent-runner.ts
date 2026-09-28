@@ -4,6 +4,7 @@ import {retrieveKnowledge} from "./knowledge";
 import {requireAdminDb} from "./outreach";
 import {evaluateSalesArtifact} from "./agent-evaluation";
 import {compactModelContext,optionalModelDraft as runOptionalModelDraft} from "./model-adapters";
+import {buildAgentContextEnvelope} from "./agent-context";
 
 export const AGENT_ORG_ID="acda1757-1698-405a-8451-5674316ceeaf";
 type Db=Awaited<ReturnType<typeof requireAdminDb>>;
@@ -15,6 +16,8 @@ export async function agentEvent(db:Db,jobId:string,event_type:string,payload:Re
 
 async function optionalModelDraft(agent:AgentId,task:string,context:Record<string,unknown>,lessons:string[]){
  const compact=compactModelContext(context);
+ const knowledge=retrieveKnowledge(task).slice(0,6);
+ const contextEnvelope=buildAgentContextEnvelope(compact,knowledge,lessons);
  const skill=(compact as any).missionSkill;
  const skillGuidance=skill&&typeof skill==="object"&&Array.isArray(skill.instructions)
   ? " Follow mission skill instructions: "+skill.instructions.slice(0,6).join(" | ")
@@ -24,7 +27,8 @@ async function optionalModelDraft(agent:AgentId,task:string,context:Record<strin
   agent,
   task,
   context:compact,
-  knowledge:retrieveKnowledge(task).slice(0,6),
+  context_envelope:contextEnvelope,
+  knowledge,
   approved_lessons:lessons.slice(0,6),
   mode:"draft-only",
   instruction:"Use only supplied facts. Prefer a specific low-risk next step. Never guarantee results. Do not invent tool results."+skillGuidance
@@ -95,6 +99,7 @@ export async function processAgentJob(db:Db,job:{id:string;status:string;input:a
   const final={
    ...output,
    model_draft:modelDraft,
+   context_policy:buildAgentContextEnvelope(context,retrieveKnowledge(String(job.input.task||"")).slice(0,6),lessons),
    model_evaluation:modelEvaluation,
    recommended_draft:useModel?modelDraft:(output as any).artifact?.body||"",
    quality_evaluation:useModel?modelEvaluation:deterministicEvaluation,
