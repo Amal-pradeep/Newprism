@@ -18,7 +18,7 @@ type Dashboard={
  outcomes:Array<{id:string;job_id:string;outcome:string;note:string;recorded_by:string;occurred_at:string}>;
 };
 
-const outcomes=["no_reply","negative_reply","positive_reply","meeting_booked","proposal_sent","won","lost"];
+const outcomes=["delivery_failed","no_reply","negative_reply","positive_reply","meeting_booked","proposal_sent","won","lost"];
 
 export default function TrainingPage(){
  const [data,setData]=useState<Dashboard|null>(null);
