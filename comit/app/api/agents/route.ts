@@ -109,12 +109,20 @@ export async function POST(req:Request){
    return NextResponse.json({ok:true,jobId,mode:result.mode});
   }
   if(action==="approve"||action==="reject"){
-   if(!isApprover(user))return NextResponse.json({ok:false,error:"Founder approval required"},{status:403});
+   const missionRisk=String(job.input?.context?.missionRisk||"");
+   const missionSkill=job.input?.context?.missionSkill;
+   const ownerCanReviewMission=Boolean(
+    job.input?.context?.missionId &&
+    job.input.requested_by===user.email &&
+    ["read","draft"].includes(missionRisk) &&
+    missionSkill?.requiresApproval!==true
+   );
+   if(!isApprover(user)&&!ownerCanReviewMission)return NextResponse.json({ok:false,error:"This step requires founder approval."},{status:403});
    if(job.status!=="awaiting_approval")return NextResponse.json({ok:false,error:"Task is not awaiting review"},{status:409});
    const decision={...job.output,review:{decision:action,by:user.email,at:new Date().toISOString()},external_action_taken:false};
    const updated=await db.from("workflow_executions").update({status:action==="approve"?"completed":"failed",output:decision,completed_at:new Date().toISOString()}).eq("organization_id",ORG_ID).eq("id",jobId).eq("status","awaiting_approval").select("id,status,output").single();
    if(updated.error||!updated.data)return NextResponse.json({ok:false,error:"Task review already changed"},{status:409});
-   await logEvent(db,jobId,action==="approve"?"agent.draft.approved":"agent.draft.rejected",{by:user.email,agent:job.input.agent});
+   await logEvent(db,jobId,action==="approve"?"agent.draft.approved":"agent.draft.rejected",{by:user.email,agent:job.input.agent,review_scope:isApprover(user)?"founder":"mission-owner"});
    const mission=await advanceMission(db,job,action==="approve"?"approve":"reject");
    return NextResponse.json({ok:true,job:updated.data,mission,external_action_taken:false});
   }
