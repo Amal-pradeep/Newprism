@@ -36,8 +36,9 @@ async function optionalModelDraft(agent:AgentId,task:string,context:Record<strin
  }catch{return null}
 }
 
-async function reusableLessons(db:Db,agent:AgentId,business:string){
+async function reusableLessons(db:Db,agent:AgentId,context:Record<string,unknown>){
  const lessons:string[]=[];
+ const business=typeof context.business==="string"?context.business.trim().toLowerCase().slice(0,120):"";
  if(business){
   const lookup=await db.from("events").select("payload")
    .eq("organization_id",AGENT_ORG_ID)
@@ -50,14 +51,29 @@ async function reusableLessons(db:Db,agent:AgentId,business:string){
  }
  try{
   const trained=await db.from("agent_training_examples")
-   .select("lesson,quality_score,outcome")
+   .select("lesson,quality_score,outcome,business_key,tags,created_at")
    .eq("organization_id",AGENT_ORG_ID)
    .eq("agent_id",agent)
    .eq("approved_for_reuse",true)
    .order("quality_score",{ascending:false})
    .order("created_at",{ascending:false})
-   .limit(4);
-  if(!trained.error)lessons.push(...(trained.data||[]).map(x=>String(x.lesson||"").slice(0,300)).filter(Boolean));
+   .limit(20);
+  if(!trained.error){
+   const relevantTokens=new Set([
+    String(context.industry||"").toLowerCase(),
+    String(context.stage||"").toLowerCase(),
+    String(context.location||"").toLowerCase()
+   ].flatMap(v=>v.split(/[^a-z0-9]+/)).filter(v=>v.length>2));
+   const ranked=(trained.data||[]).map((row:any)=>{
+    let relevance=Number(row.quality_score||0)/100;
+    if(business&&String(row.business_key||"")===business)relevance+=6;
+    for(const tag of Array.isArray(row.tags)?row.tags:[])if(relevantTokens.has(String(tag).toLowerCase()))relevance+=2;
+    if(["won","meeting_booked","proposal_sent","positive_reply"].includes(String(row.outcome)))relevance+=1.5;
+    if(["lost","negative_reply","delivery_failed"].includes(String(row.outcome)))relevance+=0.5;
+    return {row,relevance};
+   }).sort((a:any,b:any)=>b.relevance-a.relevance).slice(0,4);
+   lessons.push(...ranked.map((x:any)=>String(x.row.lesson||"").slice(0,300)).filter(Boolean));
+  }
  }catch{}
  return [...new Set(lessons)].slice(0,6);
 }
@@ -72,8 +88,7 @@ export async function processAgentJob(db:Db,job:{id:string;status:string;input:a
  try{
   const agent=job.input.agent as AgentId;
   const context=job.input.context||{};
-  const business=typeof context.business==="string"?context.business.trim().toLowerCase().slice(0,120):"";
-  const lessons=await reusableLessons(db,agent,business);
+  const lessons=await reusableLessons(db,agent,context);
   const output=draftForAgent(agent,String(job.input.task||""),context,lessons);
   const modelDraft=await optionalModelDraft(agent,String(job.input.task||""),{...context,approved_lessons:lessons},lessons);
 
