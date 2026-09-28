@@ -3,6 +3,7 @@ import {randomUUID} from "crypto";
 import {getSessionUser,isApprover,requireAdminDb} from "@/lib/outreach";
 import {buildSuperMission,missionProgress} from "@/lib/super-agent";
 import {capabilitySummary} from "@/lib/free-capabilities";
+import {skillSummary} from "@/lib/agent-skills";
 
 const ORG_ID="acda1757-1698-405a-8451-5674316ceeaf";
 export const dynamic="force-dynamic";
@@ -40,9 +41,31 @@ export async function GET(req:Request){
       return {...mission,steps,progress:missionProgress(steps)};
     });
 
+    const recentActivity=children.slice().sort((a:any,b:any)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime()).slice(0,12).map((step:any)=>({
+      id:step.id,
+      status:step.status,
+      agent:step.input?.agent||"agent",
+      title:step.input?.context?.missionStepTitle||step.input?.task||"Agent step",
+      missionId:step.input?.context?.missionId||null,
+      created_at:step.created_at,
+      quality:Number(step.output?.quality_evaluation?.score||step.output?.evaluation?.score||0)||null
+    }));
+    const qualityScores=children.map((x:any)=>Number(x.output?.quality_evaluation?.score||x.output?.evaluation?.score)).filter((x:number)=>Number.isFinite(x));
+    const health={
+      queued:children.filter((x:any)=>x.status==="queued").length,
+      processing:children.filter((x:any)=>x.status==="processing").length,
+      awaiting_review:children.filter((x:any)=>x.status==="awaiting_approval").length,
+      failed:children.filter((x:any)=>x.status==="failed").length,
+      blocked:children.filter((x:any)=>x.status==="blocked").length,
+      average_quality:qualityScores.length?Number((qualityScores.reduce((a:number,b:number)=>a+b,0)/qualityScores.length).toFixed(1)):0
+    };
+
     return NextResponse.json({
       ok:true,
       missions:enriched,
+      skills:skillSummary(),
+      health,
+      recentActivity,
       capabilities:capabilitySummary(),
       mode:"bounded-supervisor",
       policy:"Read and draft work may proceed inside COMIT. Writes, sends, publishing, spend and production changes require approval."
