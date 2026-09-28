@@ -43,7 +43,9 @@ export default function TrainingPage(){
   if(!f.outcome||f.note.trim().length<5)return;
   setBusy(jobId);setError("");
   try{
-   const r=await fetch("/api/agents/training",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"record_outcome",jobId,outcome:f.outcome,note:f.note,approvedForReuse:f.reuse})});
+   const job=data?.recent_jobs.find(item=>item.id===jobId);
+   const prospectId=job?.input?.context?.prospectId||null;
+   const r=await fetch("/api/agents/training",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"record_outcome",jobId,prospectId,outcome:f.outcome,note:f.note,approvedForReuse:f.reuse})});
    const d=await r.json();
    if(!r.ok)throw new Error(d.error||"Could not record outcome");
    setForm(v=>({...v,[jobId]:{outcome:"",note:"",reuse:false}}));
