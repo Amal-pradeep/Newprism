@@ -8,11 +8,11 @@ type Member={id:string;name:string;email?:string;phone?:string;role:string;focus
 type Checkin={memberId:string;at:string};
 const STORAGE_KEY="comit.teamCheckins.v1";
 const fallback:Member[]=[
-  {id:"amal",name:"Amal",role:"Founder · Command",focus:"Revenue, approvals, strategy",initials:"AP",color_token:"amber",daily_target:"3 high-value decisions",automation_lane:"command"},
-  {id:"aadil",name:"Aadil",role:"Sales · Outreach",focus:"Prospecting, qualification, follow-ups",initials:"AS",color_token:"blue",daily_target:"20 qualified prospects + follow-ups",automation_lane:"sales"},
-  {id:"aneesh",name:"Aneesh",role:"Creative · Growth",focus:"Posters, carousels, reels, client creative growth",initials:"AN",color_token:"violet",daily_target:"3 revenue-focused creatives",automation_lane:"creative"},
-  {id:"jishnu",name:"Jishnu",role:"Operations · Client Growth",focus:"Delivery, client growth, systems and QA",initials:"JI",color_token:"emerald",daily_target:"5 delivery/retention actions",automation_lane:"operations"},
-  {id:"shahid",name:"Shahid (Shahdi)",email:"shahidruiz01@gmail.com",phone:"+971 56 230 2610",role:"Video Production · Creative Production",focus:"Video shoots, production, edits, spot edits and related creative-production work",initials:"SH",color_token:"blue",daily_target:"Capture, produce and deliver priority video assets",automation_lane:"video"},
+  {id:"amal",name:"Amal",role:"Founder · Operations & Sales",focus:"Operations, client meetings, payments, sales decisions and execution",initials:"AP",color_token:"amber",daily_target:"3 high-value operating or sales decisions",automation_lane:"command"},
+  {id:"aadil",name:"Aadil",role:"Founder · Finance & Compliance",focus:"Accounts, legal/compliance, client management and commercial follow-up",initials:"AS",color_token:"blue",daily_target:"Review cashflow, compliance and priority client/commercial actions",automation_lane:"finance"},
+  {id:"aneesh",name:"Aneesh",role:"Design Lead · Creative",focus:"Brand design, posters, carousels and client creative systems",initials:"AN",color_token:"violet",daily_target:"3 priority design outputs tied to client or revenue outcomes",automation_lane:"creative"},
+  {id:"jishnu",name:"Jishnu",role:"AI Development · Automation",focus:"COMIT/Lunes AI engineering, automations, integrations and QA",initials:"JI",color_token:"emerald",daily_target:"Ship or validate the highest-value AI/automation improvement",automation_lane:"ai"},
+  {id:"shahid",name:"Shahid (Shahdi)",email:"shahidruiz01@gmail.com",phone:"+971 56 230 2610",role:"Video Production",focus:"Video shoots, production, edits, spot edits and creative execution",initials:"SH",color_token:"blue",daily_target:"Capture, produce and deliver priority video assets",automation_lane:"video"},
 ];
 const colorClass:Record<string,string>={amber:"border-amber-300/30 bg-amber-300/10",blue:"border-sky-300/30 bg-sky-300/10",violet:"border-violet-300/30 bg-violet-300/10",emerald:"border-emerald-300/30 bg-emerald-300/10"};
 function readCheckins():Checkin[]{try{const parsed=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");return Array.isArray(parsed)?parsed:[]}catch{return[]}}
