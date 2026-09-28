@@ -68,6 +68,39 @@ async function reconcile(){
     stageReconciled=sync.data?.length||0;
     for(const prospect of prospectList)if(staleProspectIds.includes(prospect.id))prospect.stage="contacted";
   }
+
+  let deliveryFailures=0,deliveryDelays=0;
+  const bounceIds=await gmailList('newer_than:60d from:(mailer-daemon@googlemail.com OR mailer-daemon)');
+  const bounceDetails=await Promise.all([...new Set(bounceIds.map(x=>x.id).filter(Boolean))].slice(0,120).map(async id=>{
+    try{return await gmailGet(`messages/${encodeURIComponent(id)}?format=metadata&metadataHeaders=Subject&metadataHeaders=Date`)}catch{return null}
+  }));
+  for(const msg of bounceDetails.filter(Boolean) as any[]){
+    const headers=new Map<string,string>((msg.payload?.headers||[]).map((h:any)=>[String(h.name).toLowerCase(),String(h.value||"")]));
+    const subject=headers.get("subject")||"";
+    const snippet=String(msg.snippet||"");
+    const recipient=(snippet.match(/(?:to|for)\s+([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i)||[])[1]?.toLowerCase();
+    if(!recipient)continue;
+    const approval=sentApprovals.find(a=>normalizeEmail(a.to_email)===recipient);
+    if(!approval)continue;
+    const prospect=prospectList.find(p=>p.id===approval.prospect_id);
+    if(!prospect)continue;
+    const combined=(subject+" "+snippet).toLowerCase();
+    const failed=/failure|blocked|failed|address not found|rejected|does not exist/.test(combined);
+    const delayed=!failed&&/delay|temporary problem|retry|incomplete/.test(combined);
+    if(!failed&&!delayed)continue;
+    const previous=String(prospect.metadata?.delivery_status||"");
+    const next=failed?"failed":"delayed";
+    if(previous===next)continue;
+    const metadata={...(prospect.metadata||{}),delivery_status:next,delivery_checked_at:new Date().toISOString()};
+    const update=await db.from("prospects").update({metadata,updated_at:new Date().toISOString()}).eq("organization_id",ORG_ID).eq("id",prospect.id);
+    if(update.error)throw update.error;
+    prospect.metadata=metadata;
+    if(failed){
+      deliveryFailures++;
+      await db.from("outreach_followups").update({status:"skipped",updated_at:new Date().toISOString(),notes:"Stopped after a permanent email delivery failure. Verify or replace the business contact."}).eq("prospect_id",prospect.id).in("status",["pending","prepared"]);
+    }else deliveryDelays++;
+    await db.from("audit_logs").insert({organization_id:ORG_ID,action:failed?"outreach_delivery_failed":"outreach_delivery_delayed",entity_type:"prospect",entity_id:prospect.id,metadata:{recipient_domain:recipient.split("@")[1],delivery_status:next}});
+  }
   const byEmail=new Map(prospectList.map(p=>[String(p.email).trim().toLowerCase(),p]));
   const bySubject=new Map<string,Approval[]>();
   for(const a of sentApprovals){const key=normalizeSubject(a.subject);if(!bySubject.has(key))bySubject.set(key,[]);bySubject.get(key)!.push(a)}
@@ -148,9 +181,9 @@ async function reconcile(){
     }
 
     for(const [prospectId,u] of prospectUpdates){
-      const {data:prospect}=await db.from("prospects").select("reply_count,stage").eq("id",prospectId).single();
+      const {data:prospect}=await db.from("prospects").select("reply_count,stage,metadata").eq("id",prospectId).single();
       const nextCount=Number(prospect?.reply_count||0)+u.reply_count;
-      const update:any={reply_count:nextCount,last_reply_at:u.last_reply_at,last_reply_subject:u.last_reply_subject,last_reply_snippet:u.last_reply_snippet,updated_at:new Date().toISOString()};
+      const update:any={reply_count:nextCount,last_reply_at:u.last_reply_at,last_reply_subject:u.last_reply_subject,last_reply_snippet:u.last_reply_snippet,metadata:{...(prospect?.metadata||{}),delivery_status:"verified",delivery_checked_at:new Date().toISOString()},updated_at:new Date().toISOString()};
       if(!["meeting","won","lost"].includes(String(prospect?.stage)))update.stage="replied";
       await db.from("prospects").update(update).eq("id",prospectId).eq("organization_id",ORG_ID);
       await db.from("outreach_followups").update({status:"skipped",updated_at:new Date().toISOString(),notes:"Automatic Gmail reply detected; follow-up cadence stopped."}).eq("prospect_id",prospectId).eq("status","pending");
@@ -159,7 +192,7 @@ async function reconcile(){
     }
   }
 
-  return {scanned:uniqueMessageIds.length,matched,newReplies,ignored,repliedProspects:prospectUpdates.size,stageReconciled};
+  return {scanned:uniqueMessageIds.length,matched,newReplies,ignored,repliedProspects:prospectUpdates.size,stageReconciled,deliveryFailures,deliveryDelays};
 }
 
 async function authorizedCron(req:Request){
