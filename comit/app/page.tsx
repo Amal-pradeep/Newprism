@@ -11,6 +11,7 @@ const cards=[
   ["Prospects","Research and qualify accounts","/prospects",Target],
   ["Outreach","Review drafts and follow-ups","/outreach",Mail],
   ["Team","Ownership and check-ins","/team",Users],
+  ["Team Pulse","Live focus, blockers and handoffs","/team/pulse",Users],
   ["My Wellness","Private water, break and energy check-ins","/wellness",Activity],
   ["Creative Library","Shahid’s shoots, edits and approved patterns","/creative-library",Clapperboard],
   ["AI Agents","Plan and review measurable experiments","/agents",Bot],
