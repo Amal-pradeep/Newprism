@@ -48,6 +48,8 @@ function safe(value:unknown,limit=500){return typeof value==="string"?value.trim
 
 export function draftForAgent(agent:AgentId,task:string,context:Record<string,unknown>={},approvedLessons:string[]=[]){
  const spec=agentSpecs.find(x=>x.id===agent)!;
+ const missionSkill=context.missionSkill&&typeof context.missionSkill==="object"&&!Array.isArray(context.missionSkill)?context.missionSkill as {id?:string;name?:string;instructions?:unknown;success?:unknown}:null;
+ const skillInstructions=missionSkill&&Array.isArray(missionSkill.instructions)?missionSkill.instructions.map(x=>String(x)).filter(Boolean).slice(0,3):[];
 
  if(salesAgents.has(agent)){
    const salesContext=normalizeSalesContext({...context,business:context.business||context.name});
@@ -84,9 +86,10 @@ export function draftForAgent(agent:AgentId,task:string,context:Record<string,un
      artifact={title:draft.subject,body:draft.body,checks:["Verify public business contact and current signal.","Founder review is required before external sending."]};
    }
 
+   if(skillInstructions.length)artifact.checks=[...artifact.checks,...skillInstructions.map(x=>"Skill: "+x)];
    const evaluation=(agent==="research"||agent==="qualification")?evaluateSalesStrategy(strategy):evaluateSalesArtifact(artifact.body,salesContext);
    return {
-     agent,owner:spec.owner,kind:"reviewable-draft",sales_strategy:strategy,artifact,evaluation,
+     agent,owner:spec.owner,kind:"reviewable-draft",sales_strategy:strategy,artifact,evaluation,mission_skill:missionSkill?{id:missionSkill.id,name:missionSkill.name}:null,
      approved_lessons:lessons,swarm:salesSwarmPlan(task),review_required:true,external_action_taken:false,
      caution:evaluation.pass?"Quality gate passed for review; facts still require human verification.":"Quality gate recommends revision before external use."
    };
@@ -103,8 +106,9 @@ export function draftForAgent(agent:AgentId,task:string,context:Record<string,un
  }:{
   title:"Campaign test brief",body:"Objective: "+brief.objective+". Audience and offer need confirmation. Proposed test: "+brief.recommendation.experiment,checks:["Verify approved product facts and audience.","Founder must approve publishing or spend."],
  };
+ if(skillInstructions.length)artifact.checks=[...artifact.checks,...skillInstructions.map(x=>"Skill: "+x)];
  const handoff=agent==="support"&&/churn|cancel|unhappy|competitor/.test(task.toLowerCase())
    ? {to:"sales" as AgentId,reason:"Possible retention risk. Review support facts before asking SalesStrategistAgent for a retention plan."}:null;
- return {agent,owner:spec.owner,kind:"reviewable-draft",brief,artifact,approved_lessons:approvedLessons,review_required:true,external_action_taken:false,handoff,
+ return {agent,owner:spec.owner,kind:"reviewable-draft",brief,artifact,mission_skill:missionSkill?{id:missionSkill.id,name:missionSkill.name}:null,approved_lessons:approvedLessons,review_required:true,external_action_taken:false,handoff,
   caution:agent==="bi"?"A trend cannot be verified until metric values and time windows are supplied.":agent==="support"?"Check the relevant customer policy and account facts before replying.":"Confirm all facts before external use."};
 }
