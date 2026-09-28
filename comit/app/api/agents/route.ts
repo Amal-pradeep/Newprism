@@ -12,6 +12,49 @@ async function logEvent(db:Awaited<ReturnType<typeof requireAdminDb>>,jobId:stri
  if(error)throw error;
 }
 
+
+async function advanceMission(db:Awaited<ReturnType<typeof requireAdminDb>>,job:any,decision:"approve"|"reject"){
+ const missionId=String(job.input?.context?.missionId||"");
+ if(!/^[a-f0-9-]{36}$/i.test(missionId))return null;
+ const response=await db.from("workflow_executions")
+  .select("id,status,input")
+  .eq("organization_id",ORG_ID)
+  .eq("input->>kind","agent_home")
+  .eq("input->context->>missionId",missionId);
+ if(response.error)throw response.error;
+ const steps=(response.data||[]).sort((a:any,b:any)=>Number(a.input?.context?.missionStepIndex||0)-Number(b.input?.context?.missionStepIndex||0));
+ if(decision==="reject"){
+  await db.from("workflow_executions").update({
+   status:"paused",
+   output:{progress:{total:steps.length,completed:steps.filter((x:any)=>x.status==="completed").length,failed:steps.filter((x:any)=>x.status==="failed").length+1,active:0,percent:steps.length?Math.round((steps.filter((x:any)=>x.status==="completed").length/steps.length)*100):0},paused_on:job.id,external_action_taken:false}
+  }).eq("organization_id",ORG_ID).eq("id",missionId);
+  await db.from("events").insert({organization_id:ORG_ID,event_type:"super_agent.mission.paused",aggregate_type:"super_agent_mission",aggregate_id:missionId,payload:{job_id:job.id,reason:"step_rejected"}});
+  return {missionId,status:"paused"};
+ }
+ const currentIndex=Number(job.input?.context?.missionStepIndex||0);
+ const next=steps.find((x:any)=>Number(x.input?.context?.missionStepIndex||0)>currentIndex&&x.status==="blocked");
+ if(next){
+  await db.from("workflow_executions").update({status:"queued"}).eq("organization_id",ORG_ID).eq("id",next.id).eq("status","blocked");
+ }
+ const refreshed=await db.from("workflow_executions")
+  .select("id,status,input")
+  .eq("organization_id",ORG_ID)
+  .eq("input->>kind","agent_home")
+  .eq("input->context->>missionId",missionId);
+ const children=refreshed.data||[];
+ const completed=children.filter((x:any)=>x.status==="completed").length;
+ const failed=children.filter((x:any)=>x.status==="failed").length;
+ const active=children.filter((x:any)=>["queued","processing","awaiting_approval"].includes(x.status)).length;
+ const done=completed===children.length&&children.length>0;
+ await db.from("workflow_executions").update({
+  status:done?"completed":"active",
+  output:{progress:{total:children.length,completed,failed,active,percent:children.length?Math.round((completed/children.length)*100):0},external_action_taken:false},
+  ...(done?{completed_at:new Date().toISOString()}:{})
+ }).eq("organization_id",ORG_ID).eq("id",missionId);
+ await db.from("events").insert({organization_id:ORG_ID,event_type:done?"super_agent.mission.completed":"super_agent.step.unlocked",aggregate_type:"super_agent_mission",aggregate_id:missionId,payload:{completed_job_id:job.id,next_job_id:next?.id||null}});
+ return {missionId,status:done?"completed":"active",nextJobId:next?.id||null};
+}
+
 export async function GET(req:Request){
  const user=getSessionUser(req);if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
  try{
@@ -70,7 +113,8 @@ export async function POST(req:Request){
    const updated=await db.from("workflow_executions").update({status:action==="approve"?"completed":"failed",output:decision,completed_at:new Date().toISOString()}).eq("organization_id",ORG_ID).eq("id",jobId).eq("status","awaiting_approval").select("id,status,output").single();
    if(updated.error||!updated.data)return NextResponse.json({ok:false,error:"Task review already changed"},{status:409});
    await logEvent(db,jobId,action==="approve"?"agent.draft.approved":"agent.draft.rejected",{by:user.email,agent:job.input.agent});
-   return NextResponse.json({ok:true,job:updated.data,external_action_taken:false});
+   const mission=await advanceMission(db,job,action==="approve"?"approve":"reject");
+   return NextResponse.json({ok:true,job:updated.data,mission,external_action_taken:false});
   }
   if(action==="feedback"){
    const note=typeof body.note==="string"?body.note.trim():"";
