@@ -1,14 +1,12 @@
-import { workspaceDb, workspaceMember, workspaceUnavailable } from "@/lib/workspace-db";
+import { workspaceClient, workspaceMember, workspaceUnavailable } from "@/lib/workspace-db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const db = workspaceDb();
-  if (!db) return workspaceUnavailable();
-  return Response.json({ member: await workspaceMember(db, request) }, { headers: { "cache-control": "no-store" } });
+  if (!workspaceClient()) return workspaceUnavailable();
+  return Response.json({ member: workspaceMember(request) }, { headers: { "cache-control": "no-store" } });
 }
 
-// A password or unverified email submitted here cannot create a session.
 export async function POST() {
-  return Response.json({ error: "Sign in with the verified email link on the COMIT login page." }, { status: 410 });
+  return Response.json({ error: "Use your verified COMIT email link. Password login is disabled." }, { status: 410 });
 }
