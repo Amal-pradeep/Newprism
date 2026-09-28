@@ -1,5 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createHash } from "crypto";
+import { getSessionUser } from "@/lib/outreach";
 
 export type WorkspaceMember = { email: string; name: string; role: "owner" | "member" };
 
@@ -30,13 +31,17 @@ export function sameOrigin(request: Request) {
 }
 
 export async function workspaceMember(db: WorkspaceDb, request: Request): Promise<WorkspaceMember | null> {
-  const raw = request.headers.get("cookie") || "";
-  const token = raw.match(/(?:^|;\s*)comit_workspace=([^;]+)/)?.[1];
-  if (!token || token.length > 128) return null;
-  const row = await db.prepare(
-    "SELECT m.email,m.name,m.role FROM workspace_sessions s JOIN workspace_members m ON m.email=s.email WHERE s.token_hash=? AND s.expires_at>? AND m.active=1"
-  ).bind(digest(token), new Date().toISOString()).first<WorkspaceMember>();
-  return row;
+  const user = getSessionUser(request);
+  if (!user) return null;
+  const email = user.email.toLowerCase();
+  const existing = await db.prepare("SELECT email,name,role,active FROM workspace_members WHERE email=?")
+    .bind(email).first<WorkspaceMember & { active: number }>();
+  if (existing) return existing.active ? { email: existing.email, name: existing.name, role: existing.role } : null;
+  const role = email === (process.env.COMIT_AMAL_EMAIL || "amalpradeep25@gmail.com").toLowerCase() ? "owner" : "member";
+  await db.prepare("INSERT OR IGNORE INTO workspace_members(email,name,role,code_hash) VALUES(?,?,?,NULL)")
+    .bind(email, user.name || email, role).run();
+  return db.prepare("SELECT email,name,role FROM workspace_members WHERE email=? AND active=1")
+    .bind(email).first<WorkspaceMember>();
 }
 
 export const workspaceUnavailable = () => Response.json(
