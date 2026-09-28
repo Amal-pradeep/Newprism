@@ -1,6 +1,6 @@
 import {buildBusinessResponse} from "./ai-system";
 import {buildSalesDraft,buildSalesStrategy,normalizeSalesContext} from "./sales-engine";
-import {evaluateSalesArtifact} from "./agent-evaluation";
+import {evaluateSalesArtifact,evaluateSalesStrategy} from "./agent-evaluation";
 import {selectTrainingLessons,seedSalesLessons,salesSwarmPlan} from "./agent-training";
 
 export type AgentId="research"|"qualification"|"sales"|"outreach"|"followup"|"marketing"|"support"|"bi";
@@ -84,7 +84,7 @@ export function draftForAgent(agent:AgentId,task:string,context:Record<string,un
      artifact={title:draft.subject,body:draft.body,checks:["Verify public business contact and current signal.","Founder review is required before external sending."]};
    }
 
-   const evaluation=evaluateSalesArtifact(artifact.body,salesContext);
+   const evaluation=(agent==="research"||agent==="qualification")?evaluateSalesStrategy(strategy):evaluateSalesArtifact(artifact.body,salesContext);
    return {
      agent,owner:spec.owner,kind:"reviewable-draft",sales_strategy:strategy,artifact,evaluation,
      approved_lessons:lessons,swarm:salesSwarmPlan(task),review_required:true,external_action_taken:false,
