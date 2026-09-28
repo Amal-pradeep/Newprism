@@ -1,4 +1,5 @@
 import type {AgentId} from "./agent-home";
+import {selectAgentSkill} from "./agent-skills";
 
 export type MissionRisk="read"|"draft"|"internal_write"|"external_write";
 export type MissionStep={
@@ -19,6 +20,8 @@ export type SuperMission={
   maxParallel:number;
   maxSteps:number;
   humanApprovalRequiredFor:MissionRisk[];
+  budget:{maxAgentRuns:number;maxModelDrafts:number;maxContextChars:number};
+  skill:{id:string;name:string;instructions:string[];success:string[]};
   stopConditions:string[];
   contextPolicy:string[];
   steps:MissionStep[];
@@ -41,6 +44,7 @@ function step(id:string,title:string,agent:AgentId,objective:string,success:stri
 
 export function buildSuperMission(task:string,context:Record<string,unknown>={}):SuperMission{
   const goal=task.trim().slice(0,1800);
+  const skill=selectAgentSkill(goal);
   const steps:MissionStep[]=[];
 
   if(has(task,/lead|prospect|sales|outreach|client acquisition|revenue/)){
@@ -79,6 +83,8 @@ export function buildSuperMission(task:string,context:Record<string,unknown>={})
     maxParallel:2,
     maxSteps:Math.min(8,steps.length),
     humanApprovalRequiredFor:["internal_write","external_write"],
+    budget:{maxAgentRuns:Math.min(12,steps.length*2),maxModelDrafts:Math.min(4,Math.max(1,steps.length)),maxContextChars:12000},
+    skill:{id:skill.id,name:skill.name,instructions:skill.instructions,success:skill.success},
     stopConditions:[
       "Required evidence cannot be verified.",
       "A human approval gate is reached.",
