@@ -89,7 +89,8 @@ export async function POST(req:Request){
           missionStepTitle:step.title,
           missionSuccess:step.success,
           missionRisk:step.risk,
-          missionMaxAttempts:step.maxAttempts
+          missionMaxAttempts:step.maxAttempts,
+          missionSkill:plan.skill
         },
         agent:step.agent,
         requested_by:user.email
