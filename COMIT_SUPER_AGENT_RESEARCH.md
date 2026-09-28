@@ -202,6 +202,7 @@ The UI direction borrows patterns, not assets:
 - Dribbble AI-agent dashboards: compact agent status rows and high-signal metrics
 - hydration dashboard concepts: simple intake progress, quick-add controls and low-friction daily check-ins
 - Figma Community/agent patterns: reusable skills, design-system consistency, editable output and feedback-in-context
+- Pinterest hydration/tracker references: large progress indicator, one-tap intake buttons, minimal daily cards and mobile-first layouts; used as pattern inspiration only
 
 References:
 - https://dribbble.com/shots/27121979-AxionAI-AI-Agent-Dashboard
@@ -209,6 +210,8 @@ References:
 - https://help.figma.com/hc/en-us/articles/360038510693-Guide-to-the-Figma-Community
 - https://help.figma.com/hc/en-us/articles/42287852075543-Find-and-use-skills-from-the-Figma-Community
 - https://www.figma.com/blog/the-figma-canvas-is-now-open-to-agents/
+- https://in.pinterest.com/pin/hydration-tracker-dynamic-island-ui-in-2025--360147301472262283/
+- https://ca.pinterest.com/pin/free-hydration-tracker-dashboard-for-figma--597571444328279434/
 
 No third-party image or design asset is copied into COMIT from these references.
 
