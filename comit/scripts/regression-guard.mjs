@@ -15,6 +15,7 @@ const required = [
   "lib/agent-evaluation.ts",
   "lib/agent-training.ts",
   "lib/super-agent.ts",
+  "lib/agent-skills.ts",
   "lib/free-capabilities.ts",
   "app/api/agents/training/route.ts",
   "app/api/agents/missions/route.ts",
@@ -74,8 +75,13 @@ if (!outreachRoute.includes("quality.pass") || !outreachRoute.includes("isApprov
 
 const superAgent = fs.readFileSync(path.join(root, "lib/super-agent.ts"), "utf8");
 const agentRoute = fs.readFileSync(path.join(root, "app/api/agents/route.ts"), "utf8");
-if (!superAgent.includes("bounded-supervisor") || !superAgent.includes("maxAttempts")) {
-  throw new Error("Regression guard: bounded super-agent mission planner is missing.");
+if (!superAgent.includes("bounded-supervisor") || !superAgent.includes("maxAttempts") || !superAgent.includes("maxAgentRuns")) {
+  throw new Error("Regression guard: bounded super-agent mission planner or execution budget is missing.");
+}
+const skills = fs.readFileSync(path.join(root, "lib/agent-skills.ts"), "utf8");
+const agentHome = fs.readFileSync(path.join(root, "lib/agent-home.ts"), "utf8");
+if (!skills.includes("Account → Meeting") || !skills.includes("Team Unblock") || !agentHome.includes("missionSkill")) {
+  throw new Error("Regression guard: reusable mission skills are not wired into agent output.");
 }
 if (!agentRoute.includes("advanceMission") || !agentRoute.includes('status:"blocked"') && !fs.readFileSync(path.join(root, "app/api/agents/missions/route.ts"), "utf8").includes('status:index===0?"queued":"blocked"')) {
   throw new Error("Regression guard: super-agent sequential review gates are missing.");
@@ -91,6 +97,15 @@ if (!wellnessApi.includes("medical_use:false") || !fs.readFileSync(path.join(roo
 }
 if (pulseApi.includes("team_wellness")) {
   throw new Error("Regression guard: shared Team Pulse must not read private wellness tables.");
+}
+
+const capabilities = fs.readFileSync(path.join(root, "lib/free-capabilities.ts"), "utf8");
+if (!capabilities.includes('id:"figma"') || !capabilities.includes('noCostCore:false')) {
+  throw new Error("Regression guard: Figma must remain an optional, non-core capability under the no-billing policy.");
+}
+const missionApi = fs.readFileSync(path.join(root, "app/api/agents/missions/route.ts"), "utf8");
+if (!missionApi.includes("average_quality") || !missionApi.includes("recentActivity") || !missionApi.includes("skillSummary")) {
+  throw new Error("Regression guard: Mission Control observability or skill shelf is missing.");
 }
 
 console.log("COMIT regression guard passed.");
