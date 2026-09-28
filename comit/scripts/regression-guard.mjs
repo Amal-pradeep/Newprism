@@ -14,9 +14,19 @@ const required = [
   "lib/sales-engine.ts",
   "lib/agent-evaluation.ts",
   "lib/agent-training.ts",
+  "lib/super-agent.ts",
+  "lib/free-capabilities.ts",
   "app/api/agents/training/route.ts",
+  "app/api/agents/missions/route.ts",
   "app/agents/training/page.tsx",
+  "app/agents/mission-control/page.tsx",
+  "app/api/wellness/route.ts",
+  "app/wellness/page.tsx",
+  "app/api/team/pulse/route.ts",
+  "app/team/pulse/page.tsx",
   "supabase/agent-training.sql",
+  "supabase/team-wellness.sql",
+  "supabase/team-pulse.sql",
   "AUTOMATION_BLUEPRINT.md",
   "vercel.json",
 ];
@@ -60,6 +70,27 @@ if (!evaluator.includes("evaluateSalesArtifact") || !evaluator.includes("Claim s
 }
 if (!outreachRoute.includes("quality.pass") || !outreachRoute.includes("isApprover")) {
   throw new Error("Regression guard: outbound sales must remain quality-gated and founder-approved.");
+}
+
+const superAgent = fs.readFileSync(path.join(root, "lib/super-agent.ts"), "utf8");
+const agentRoute = fs.readFileSync(path.join(root, "app/api/agents/route.ts"), "utf8");
+if (!superAgent.includes("bounded-supervisor") || !superAgent.includes("maxAttempts")) {
+  throw new Error("Regression guard: bounded super-agent mission planner is missing.");
+}
+if (!agentRoute.includes("advanceMission") || !agentRoute.includes('status:"blocked"') && !fs.readFileSync(path.join(root, "app/api/agents/missions/route.ts"), "utf8").includes('status:index===0?"queued":"blocked"')) {
+  throw new Error("Regression guard: super-agent sequential review gates are missing.");
+}
+
+const wellnessApi = fs.readFileSync(path.join(root, "app/api/wellness/route.ts"), "utf8");
+const pulseApi = fs.readFileSync(path.join(root, "app/api/team/pulse/route.ts"), "utf8");
+if (!wellnessApi.includes('eq("user_email",user.email)')) {
+  throw new Error("Regression guard: wellness API must scope reads to the signed-in teammate.");
+}
+if (!wellnessApi.includes("medical_use:false") || !fs.readFileSync(path.join(root, "app/wellness/page.tsx"), "utf8").includes("not medical")) {
+  throw new Error("Regression guard: wellness feature must remain non-medical self-tracking.");
+}
+if (pulseApi.includes("team_wellness")) {
+  throw new Error("Regression guard: shared Team Pulse must not read private wellness tables.");
 }
 
 console.log("COMIT regression guard passed.");
