@@ -5,6 +5,7 @@ import {buildSuperMission,missionProgress} from "@/lib/super-agent";
 import {capabilitySummary} from "@/lib/free-capabilities";
 import {skillSummary} from "@/lib/agent-skills";
 import {createTraceId,traceRecord} from "@/lib/agent-tracing";
+import {mcpPolicySummary} from "@/lib/mcp-policy";
 
 const ORG_ID="acda1757-1698-405a-8451-5674316ceeaf";
 export const dynamic="force-dynamic";
@@ -78,6 +79,7 @@ export async function GET(req:Request){
       health,
       recentActivity,
       capabilities:capabilitySummary(),
+      mcpPolicy:mcpPolicySummary(),
       mode:"bounded-supervisor",
       policy:"Read and draft work may proceed inside COMIT. Writes, sends, publishing, spend and production changes require approval."
     });
