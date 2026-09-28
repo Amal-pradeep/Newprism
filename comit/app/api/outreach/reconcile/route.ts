@@ -54,6 +54,20 @@ async function reconcile(){
 
   const sentApprovals=(approvals||[]) as Approval[];
   const prospectList=(prospects||[]) as Prospect[];
+
+  const terminalStages=new Set(["contacted","replied","meeting","won","lost"]);
+  const staleProspectIds=[...new Set(sentApprovals.map(a=>a.prospect_id).filter(id=>{
+    const prospect=prospectList.find(p=>p.id===id);
+    return prospect&&!terminalStages.has(String(prospect.stage||""));
+  }))];
+  let stageReconciled=0;
+  if(staleProspectIds.length){
+    const now=new Date().toISOString();
+    const sync=await db.from("prospects").update({stage:"contacted",updated_at:now}).eq("organization_id",ORG_ID).in("id",staleProspectIds).select("id");
+    if(sync.error)throw sync.error;
+    stageReconciled=sync.data?.length||0;
+    for(const prospect of prospectList)if(staleProspectIds.includes(prospect.id))prospect.stage="contacted";
+  }
   const byEmail=new Map(prospectList.map(p=>[String(p.email).trim().toLowerCase(),p]));
   const bySubject=new Map<string,Approval[]>();
   for(const a of sentApprovals){const key=normalizeSubject(a.subject);if(!bySubject.has(key))bySubject.set(key,[]);bySubject.get(key)!.push(a)}
@@ -145,7 +159,7 @@ async function reconcile(){
     }
   }
 
-  return {scanned:uniqueMessageIds.length,matched,newReplies,ignored,repliedProspects:prospectUpdates.size};
+  return {scanned:uniqueMessageIds.length,matched,newReplies,ignored,repliedProspects:prospectUpdates.size,stageReconciled};
 }
 
 async function authorizedCron(req:Request){
