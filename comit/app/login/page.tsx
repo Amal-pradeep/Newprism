@@ -9,7 +9,8 @@ export default function Login(){
   const [sent,setSent]=useState(false);
   const submit=async(e:React.FormEvent)=>{
     e.preventDefault();setBusy(true);setError("");
-    const r=await fetch("/api/auth/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email})});
+    const next=new URLSearchParams(window.location.search).get("next");
+    const r=await fetch("/api/auth/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,next:next==="/workspace"?next:undefined})});
     const d=await r.json();
     if(!r.ok){setError(d.error||"This email is not authorized for COMIT.");setBusy(false);return}
     setSent(true);setBusy(false);
