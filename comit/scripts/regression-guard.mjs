@@ -4,7 +4,6 @@ import path from "node:path";
 const root = process.cwd();
 const forbidden = [
   { file: "vercel.json", pattern: /cron/i, reason: "COMIT must not depend on Vercel Cron for scheduled work." },
-  { file: "package.json", pattern: /cf:deploy|opennextjs-cloudflare deploy|wrangler deploy/i, reason: "Cloudflare deployment commands must stay disabled." },
   { file: "app/api/learning/route.ts", pattern: /scheduled_learning|cycle_seconds|setInterval/i, reason: "AI learning must be outcome-driven, not recurring pseudo-training." },
 ];
 
@@ -33,6 +32,8 @@ const required = [
   "supabase/team-pulse.sql",
   "AUTOMATION_BLUEPRINT.md",
   "vercel.json",
+  "open-next.config.ts",
+  "wrangler.jsonc",
 ];
 
 for (const rel of required) {
@@ -122,6 +123,22 @@ if (!contextProvider.includes("Never inject teammate private wellness") || !cont
 }
 if (!tracing.includes("trace_id") || !tracing.includes("span_id")) {
   throw new Error("Regression guard: vendor-neutral agent tracing contract is missing.");
+}
+
+const packageJson = fs.readFileSync(path.join(root, "package.json"), "utf8");
+const wranglerConfig = fs.readFileSync(path.join(root, "wrangler.jsonc"), "utf8");
+const openNextConfig = fs.readFileSync(path.join(root, "open-next.config.ts"), "utf8");
+if (!packageJson.includes('"cf:build"') || !packageJson.includes('"cf:deploy"') || !packageJson.includes('"verify:cloudflare"')) {
+  throw new Error("Regression guard: manual Cloudflare build/deploy scripts are missing.");
+}
+if (!wranglerConfig.includes(".open-next/worker.js") || !wranglerConfig.includes("nodejs_compat") || !wranglerConfig.includes(".open-next/assets")) {
+  throw new Error("Regression guard: Cloudflare OpenNext Worker configuration is incomplete.");
+}
+if (wranglerConfig.includes("d1_databases") || wranglerConfig.includes("COMIT_DB") || wranglerConfig.includes("WORKER_SELF_REFERENCE")) {
+  throw new Error("Regression guard: Cloudflare config must not reintroduce D1 or self-service bindings.");
+}
+if (!openNextConfig.includes("defineCloudflareConfig")) {
+  throw new Error("Regression guard: OpenNext Cloudflare adapter config is missing.");
 }
 
 console.log("COMIT regression guard passed.");
