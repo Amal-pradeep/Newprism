@@ -10,10 +10,7 @@
     "typecheck": "tsc --noEmit",
     "regression": "node scripts/regression-guard.mjs",
     "verify": "npm run typecheck && npm run regression && npm run build",
-    "cf:build": "opennextjs-cloudflare build",
-    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "verify:local": "npm run typecheck && npm run regression && npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
