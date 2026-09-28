@@ -3,11 +3,11 @@ import {useEffect,useState} from "react";
 import {MessageCircle,ShieldCheck,CheckCircle2,Target,Workflow,Clock3,GlassWater} from "lucide-react";
 
 const fallback=[
- {name:"Amal",email:"amalpradeep25@gmail.com",role:"Founder · Command",focus:"Revenue, approvals, strategy",initials:"AP",logo_key:"prism",color_token:"amber",daily_target:"3 high-value decisions",automation_lane:"command"},
- {name:"Aadil",email:"aadil.sudhir279@gmail.com",role:"Sales · Outreach",focus:"Prospecting, qualification, follow-ups",initials:"AS",logo_key:"sales",color_token:"blue",daily_target:"20 qualified prospects + follow-ups",automation_lane:"sales"},
- {name:"Aneesh",email:"msaneeshnath@gmail.com",role:"Creative · Growth",focus:"Posters, carousels, reels, client creative growth",initials:"AN",logo_key:"creative",color_token:"violet",daily_target:"3 revenue-focused creatives",automation_lane:"creative"},
- {name:"Jishnu",email:"jishnu.01010011@gmail.com",role:"Operations · Client Growth",focus:"Delivery, client growth, systems and QA",initials:"JI",logo_key:"operations",color_token:"emerald",daily_target:"5 delivery/retention actions",automation_lane:"operations"},
- {name:"Shahid (Shahdi)",email:"shahidruiz01@gmail.com",phone:"+971 56 230 2610",role:"Video Production · Creative Production",focus:"Video shoots, production, edits, spot edits and related creative-production work",initials:"SH",logo_key:"video",color_token:"blue",daily_target:"Capture, produce and deliver priority video assets",automation_lane:"video"}
+ {name:"Amal",email:"amalpradeep25@gmail.com",role:"Founder · Operations & Sales",focus:"Operations, client meetings, payments, sales decisions and execution",initials:"AP",logo_key:"prism",color_token:"amber",daily_target:"3 high-value operating or sales decisions",automation_lane:"command"},
+ {name:"Aadil",email:"aadil.sudhir279@gmail.com",role:"Founder · Finance & Compliance",focus:"Accounts, legal/compliance, client management and commercial follow-up",initials:"AS",logo_key:"finance",color_token:"blue",daily_target:"Review cashflow, compliance and priority client/commercial actions",automation_lane:"finance"},
+ {name:"Aneesh",email:"msaneeshnath@gmail.com",role:"Design Lead · Creative",focus:"Brand design, posters, carousels and client creative systems",initials:"AN",logo_key:"creative",color_token:"violet",daily_target:"3 priority design outputs tied to client or revenue outcomes",automation_lane:"creative"},
+ {name:"Jishnu",email:"jishnu.01010011@gmail.com",role:"AI Development · Automation",focus:"COMIT/Lunes AI engineering, automations, integrations and QA",initials:"JI",logo_key:"ai",color_token:"emerald",daily_target:"Ship or validate the highest-value AI/automation improvement",automation_lane:"ai"},
+ {name:"Shahid (Shahdi)",email:"shahidruiz01@gmail.com",phone:"+971 56 230 2610",role:"Video Production",focus:"Video shoots, production, edits, spot edits and creative execution",initials:"SH",logo_key:"video",color_token:"blue",daily_target:"Capture, produce and deliver priority video assets",automation_lane:"video"}
 ];
 const logoClass:any={amber:"border-amber-300/30 bg-amber-300/10",blue:"border-sky-300/30 bg-sky-300/10",violet:"border-violet-300/30 bg-violet-300/10",emerald:"border-emerald-300/30 bg-emerald-300/10"};
 export default function Team(){
