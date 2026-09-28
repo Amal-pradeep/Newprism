@@ -38,7 +38,7 @@ export const freeCapabilityRegistry:Capability[]=[
     id:"n8n",name:"n8n self-hosted + community nodes",category:"automation",openSource:false,noCostCore:true,
     purpose:"Compose event-driven workflows, schedules and agent/tool calls around COMIT.",
     risk:"external_write",enabledByDefault:false,
-    notes:"Source-available/fair-code rather than OSI open source. Self-host for the no-charge constraint. Install only reviewed community nodes; unverified nodes can execute arbitrary code.",
+    notes:"Source-available/fair-code rather than OSI open source. Use self-hosted n8n for Prism internal workflows only under the no-charge constraint; review licensing before embedding or exposing n8n as a substantial client-facing product capability. Install only reviewed community nodes; unverified nodes can execute arbitrary code.",
     docs:"https://docs.n8n.io/"
   },
   {
