@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { followupBody, getSessionUser, isApprover, requireAdminDb, AMAL_EMAIL, AADIL_EMAIL } from "@/lib/outreach";
+import { getSessionUser, isApprover, requireAdminDb, AMAL_EMAIL, AADIL_EMAIL } from "@/lib/outreach";
+import { buildSalesDraft, salesContextFromProspect } from "@/lib/sales-engine";
+import { evaluateSalesArtifact } from "@/lib/agent-evaluation";
 
 const ORG_ID = "acda1757-1698-405a-8451-5674316ceeaf";
 const ACTIVE_STAGES = new Set(["replied","meeting","won","lost"]);
@@ -63,7 +65,11 @@ export async function POST(req:Request){
       const prospect=f.prospects;
       if(ACTIVE_STAGES.has(String(prospect?.stage)))return NextResponse.json({ok:false,error:"This prospect already has an outcome recorded."},{status:409});
       const source=f.source_approval;
-      const subject=String(source?.subject||("A practical growth idea for "+prospect.name)).replace(/^Re:\s*/i,"");
+      const context=salesContextFromProspect(prospect);
+      const draft=buildSalesDraft(context,"followup");
+      const quality=evaluateSalesArtifact(draft.body,context);
+      if(!quality.pass)return NextResponse.json({ok:false,error:"Follow-up quality gate recommends revision before approval.",quality},{status:409});
+      const subject=String(source?.subject||draft.subject||("A practical growth idea for "+prospect.name)).replace(/^Re:\s*/i,"");
       const {data:approval,error}=await db.from("outreach_approvals").insert({
         organization_id:f.organization_id,
         prospect_id:f.prospect_id,
@@ -74,12 +80,12 @@ export async function POST(req:Request){
         to_email:prospect.email,
         cc_emails:[AMAL_EMAIL,AADIL_EMAIL],
         subject:"Re: "+subject,
-        body:followupBody(prospect,f.sequence_no),
+        body:draft.body,
         gmail_thread_id:source?.gmail_thread_id||null
       }).select().single();
       if(error)throw error;
       await db.from("outreach_followups").update({status:"prepared",prepared_approval_id:approval.id,updated_at:new Date().toISOString()}).eq("id",f.id);
-      return NextResponse.json({ok:true,approval});
+      return NextResponse.json({ok:true,approval,quality});
     }
 
     if(action==="complete-followup"||action==="skip-followup"){
