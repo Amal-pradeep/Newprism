@@ -99,6 +99,7 @@ Training means:
 6. retrieve the strongest relevant lessons on future runs
 
 Allowed outcome labels:
+- delivery_failed
 - no_reply
 - negative_reply
 - positive_reply
@@ -113,7 +114,7 @@ The Training Lab optimizes for replies, meetings, proposals and wins rather than
 
 Do not train on stale or inconsistent CRM labels.
 
-The outreach reconciliation flow repairs sent messages whose prospect stage was not advanced. Replies stop pending follow-up cadence. Outcomes recorded in Training Lab can update the linked prospect stage.
+The outreach reconciliation flow repairs sent messages whose prospect stage was not advanced. Delivery failures and temporary delays are tracked separately from no-reply; permanent failures stop pending follow-ups. Replies stop pending follow-up cadence and mark the contact as deliverable. Outcomes recorded in Training Lab can update the linked prospect stage.
 
 A lesson is reusable only after founder approval.
 
