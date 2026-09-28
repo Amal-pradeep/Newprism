@@ -1,12 +1,7 @@
 name: COMIT CI
 
 on:
-  push:
-    paths:
-      - "comit/**"
-  pull_request:
-    paths:
-      - "comit/**"
+  workflow_dispatch:
 
 jobs:
   verify:
