@@ -3,6 +3,7 @@ import {COMIT_SYSTEM_PROMPT} from "./ai-system";
 import {retrieveKnowledge} from "./knowledge";
 import {requireAdminDb} from "./outreach";
 import {evaluateSalesArtifact} from "./agent-evaluation";
+import {compactModelContext,optionalModelDraft as runOptionalModelDraft} from "./model-adapters";
 
 export const AGENT_ORG_ID="acda1757-1698-405a-8451-5674316ceeaf";
 type Db=Awaited<ReturnType<typeof requireAdminDb>>;
@@ -13,27 +14,21 @@ export async function agentEvent(db:Db,jobId:string,event_type:string,payload:Re
 }
 
 async function optionalModelDraft(agent:AgentId,task:string,context:Record<string,unknown>,lessons:string[]){
- const webhook=process.env.N8N_AGENT_WEBHOOK_URL,secret=process.env.N8N_AGENT_SHARED_SECRET;
- if(!webhook||!secret)return null;
- try{
-  const response=await fetch(webhook,{
-   method:"POST",
-   headers:{"Content-Type":"application/json","X-COMIT-Agent-Secret":secret},
-   body:JSON.stringify({
-    system:COMIT_SYSTEM_PROMPT,
-    agent,task,context,knowledge:retrieveKnowledge(task),
-    approved_lessons:lessons,
-    mode:"draft-only",
-    external_tools_allowed:false,
-    instruction:"Use only supplied facts. Prefer a specific low-risk next step. Never guarantee results."
-   }),
-   signal:AbortSignal.timeout(8000),cache:"no-store"
-  });
-  if(!response.ok)return null;
-  const data=await response.json();
-  if(data?.ok!==true||typeof data.answer!=="string"||!data.answer.trim()||data.answer.length>4000)return null;
-  return data.answer.trim();
- }catch{return null}
+ const compact=compactModelContext(context);
+ const skill=(compact as any).missionSkill;
+ const skillGuidance=skill&&typeof skill==="object"&&Array.isArray(skill.instructions)
+  ? " Follow mission skill instructions: "+skill.instructions.slice(0,6).join(" | ")
+  : "";
+ return runOptionalModelDraft({
+  system:COMIT_SYSTEM_PROMPT,
+  agent,
+  task,
+  context:compact,
+  knowledge:retrieveKnowledge(task).slice(0,6),
+  approved_lessons:lessons.slice(0,6),
+  mode:"draft-only",
+  instruction:"Use only supplied facts. Prefer a specific low-risk next step. Never guarantee results. Do not invent tool results."+skillGuidance
+ });
 }
 
 async function reusableLessons(db:Db,agent:AgentId,context:Record<string,unknown>){
@@ -90,7 +85,8 @@ export async function processAgentJob(db:Db,job:{id:string;status:string;input:a
   const context=job.input.context||{};
   const lessons=await reusableLessons(db,agent,context);
   const output=draftForAgent(agent,String(job.input.task||""),context,lessons);
-  const modelDraft=await optionalModelDraft(agent,String(job.input.task||""),{...context,approved_lessons:lessons},lessons);
+  const modelResult=await optionalModelDraft(agent,String(job.input.task||""),{...context,approved_lessons:lessons},lessons);
+  const modelDraft=modelResult?.answer||null;
 
   const deterministicEvaluation=(output as any).evaluation||evaluateSalesArtifact(String((output as any).artifact?.body||""),context);
   const textDraftAgent=agent==="outreach"||agent==="followup"||agent==="sales";
@@ -103,7 +99,7 @@ export async function processAgentJob(db:Db,job:{id:string;status:string;input:a
    recommended_draft:useModel?modelDraft:(output as any).artifact?.body||"",
    quality_evaluation:useModel?modelEvaluation:deterministicEvaluation,
    quality_gate:(useModel?modelEvaluation?.pass:deterministicEvaluation.pass)?"pass":"revise",
-   model_mode:modelDraft?"connected-n8n-draft":"rules-based",
+   model_mode:modelResult?modelResult.provider+(modelResult.model?":"+modelResult.model:""):"rules-based",
    external_action_taken:false
   };
 
