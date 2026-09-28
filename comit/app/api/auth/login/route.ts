@@ -31,7 +31,8 @@ export async function POST(req:Request){
   const email=String(body.email||"").trim().toLowerCase();
   if(!teamUser(email))return NextResponse.json({ok:false,error:"This email is not authorized for COMIT."},{status:401});
   const origin=new URL(req.url).origin;
-  const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:`${origin}/auth/callback`}});
+  const destination=body.next==="/workspace"?"?next=workspace":"";
+  const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:`${origin}/auth/callback${destination}`}});
   if(error)return NextResponse.json({ok:false,error:"Could not send a sign-in link. Check Supabase email sign-in and the allowed redirect URL."},{status:503});
   return NextResponse.json({ok:true,linkSent:true});
 }
