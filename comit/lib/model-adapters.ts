@@ -27,7 +27,7 @@ export function compactModelContext(raw:Record<string,unknown>={}){
     if(value===undefined||value===null||value==="")continue;
     if(typeof value==="string")compact[key]=value.slice(0,1200);
     else if(Array.isArray(value))compact[key]=value.slice(0,8).map(v=>typeof v==="string"?v.slice(0,400):v);
-    else if(typeof value==="object")compact[key]=JSON.parse(JSON.stringify(value).slice(0,4000));
+    else if(typeof value==="object"){const serialized=JSON.stringify(value);compact[key]=serialized.length<=4000?value:serialized.slice(0,4000);}
     else compact[key]=value;
   }
   return compact;
