@@ -5,6 +5,7 @@ import {requireAdminDb} from "./outreach";
 import {evaluateSalesArtifact} from "./agent-evaluation";
 import {compactModelContext,optionalModelDraft as runOptionalModelDraft} from "./model-adapters";
 import {buildAgentContextEnvelope} from "./agent-context";
+import {traceRecord} from "./agent-tracing";
 
 export const AGENT_ORG_ID="acda1757-1698-405a-8451-5674316ceeaf";
 type Db=Awaited<ReturnType<typeof requireAdminDb>>;
@@ -87,6 +88,7 @@ export async function processAgentJob(db:Db,job:{id:string;status:string;input:a
  try{
   const agent=job.input.agent as AgentId;
   const context=job.input.context||{};
+  const traceId=typeof context.traceId==="string"?context.traceId:job.id;
   const lessons=await reusableLessons(db,agent,context);
   const output=draftForAgent(agent,String(job.input.task||""),context,lessons);
   const modelResult=await optionalModelDraft(agent,String(job.input.task||""),{...context,approved_lessons:lessons},lessons);
@@ -121,9 +123,10 @@ export async function processAgentJob(db:Db,job:{id:string;status:string;input:a
     agent,score:(final.quality_evaluation as any)?.score||0,
     grade:(final.quality_evaluation as any)?.grade||"D",
     pass:Boolean((final.quality_evaluation as any)?.pass),
-    model_mode:final.model_mode
+    model_mode:final.model_mode,
+    trace:traceRecord(traceId,"agent.evaluated",agent+" evaluation",{score:Number((final.quality_evaluation as any)?.score||0),pass:Boolean((final.quality_evaluation as any)?.pass)})
    });
-   await agentEvent(db,job.id,"agent.draft.ready",{agent,owner:(output as any).owner,model_mode:final.model_mode,handoff:(output as any).handoff||null,quality_gate:final.quality_gate});
+   await agentEvent(db,job.id,"agent.draft.ready",{agent,owner:(output as any).owner,model_mode:final.model_mode,handoff:(output as any).handoff||null,quality_gate:final.quality_gate,trace:traceRecord(traceId,"agent.draft.ready",agent+" draft",{quality_gate:final.quality_gate,model_mode:final.model_mode})});
   }catch{
    return {ok:true,jobId:job.id,mode:final.model_mode,audit_warning:"Draft saved; one or more event-log writes failed"};
   }
