@@ -15,6 +15,9 @@ const required = [
   "lib/agent-evaluation.ts",
   "lib/agent-training.ts",
   "lib/super-agent.ts",
+  "lib/agent-tracing.ts",
+  "lib/agent-context.ts",
+  "lib/model-adapters.ts",
   "lib/agent-skills.ts",
   "lib/free-capabilities.ts",
   "app/api/agents/training/route.ts",
@@ -106,6 +109,19 @@ if (!capabilities.includes('id:"figma"') || !capabilities.includes('noCostCore:f
 const missionApi = fs.readFileSync(path.join(root, "app/api/agents/missions/route.ts"), "utf8");
 if (!missionApi.includes("average_quality") || !missionApi.includes("recentActivity") || !missionApi.includes("skillSummary")) {
   throw new Error("Regression guard: Mission Control observability or skill shelf is missing.");
+}
+
+const modelAdapters = fs.readFileSync(path.join(root, "lib/model-adapters.ts"), "utf8");
+const contextProvider = fs.readFileSync(path.join(root, "lib/agent-context.ts"), "utf8");
+const tracing = fs.readFileSync(path.join(root, "lib/agent-tracing.ts"), "utf8");
+if (!modelAdapters.includes("COMIT_OLLAMA_URL") || !modelAdapters.includes("external_tools_allowed:false") && !fs.readFileSync(path.join(root, "lib/agent-runner.ts"), "utf8").includes("external_tools_allowed")) {
+  throw new Error("Regression guard: optional local model path must remain explicit and tool-disabled.");
+}
+if (!contextProvider.includes("Never inject teammate private wellness") || !contextProvider.includes("excluded_private_fields")) {
+  throw new Error("Regression guard: business-agent context must exclude private wellness data.");
+}
+if (!tracing.includes("trace_id") || !tracing.includes("span_id")) {
+  throw new Error("Regression guard: vendor-neutral agent tracing contract is missing.");
 }
 
 console.log("COMIT regression guard passed.");
