@@ -35,10 +35,10 @@ export const freeCapabilityRegistry:Capability[]=[
     docs:"https://github.com/ggml-org/llama.cpp"
   },
   {
-    id:"n8n",name:"n8n self-hosted + community nodes",category:"automation",openSource:true,noCostCore:true,
+    id:"n8n",name:"n8n self-hosted + community nodes",category:"automation",openSource:false,noCostCore:true,
     purpose:"Compose event-driven workflows, schedules and agent/tool calls around COMIT.",
     risk:"external_write",enabledByDefault:false,
-    notes:"Self-host for the no-charge constraint. Install only reviewed community nodes; unverified nodes can execute arbitrary code.",
+    notes:"Source-available/fair-code rather than OSI open source. Self-host for the no-charge constraint. Install only reviewed community nodes; unverified nodes can execute arbitrary code.",
     docs:"https://docs.n8n.io/"
   },
   {
@@ -53,6 +53,27 @@ export const freeCapabilityRegistry:Capability[]=[
     purpose:"Optional design-review and canvas collaboration layer for COMIT UI exploration, reusable design skills and code/design alignment.",
     risk:"internal_write",enabledByDefault:false,
     notes:"Do not make COMIT depend on Figma for runtime behavior. Current agent/canvas access may be free during beta but Figma has stated it is intended to become usage-based paid.",
+    docs:"https://www.figma.com/blog/the-figma-canvas-is-now-open-to-agents/"
+  },
+  {
+    id:"langfuse",name:"Langfuse / OpenTelemetry",category:"observability",openSource:true,noCostCore:true,
+    purpose:"Optional self-hosted tracing and evaluation for agent runs, retrieval, latency, quality and mission debugging.",
+    risk:"internal_write",enabledByDefault:false,
+    notes:"COMIT should emit its own trace/event contract first. Add Langfuse or another OTEL backend only after local verification; some hosted/add-on features can cost money.",
+    docs:"https://langfuse.com/docs"
+  },
+  {
+    id:"penpot",name:"Penpot",category:"design",openSource:true,noCostCore:true,
+    purpose:"Optional open-source collaborative design/prototyping workspace when a self-hostable Figma-style canvas is useful.",
+    risk:"internal_write",enabledByDefault:false,
+    notes:"Use as an optional design workspace, not a runtime dependency of COMIT.",
+    docs:"https://help.penpot.dev/"
+  },
+  {
+    id:"figma",name:"Figma Agent / MCP",category:"design",openSource:false,noCostCore:false,
+    purpose:"Optional design-system-aware canvas for editable UI exploration, skills and agent-assisted design.",
+    risk:"internal_write",enabledByDefault:false,
+    notes:"Reference and connector only. Figma states the current agent/MCP beta is free for now but is expected to become usage-based paid; never enable it as a no-billing dependency.",
     docs:"https://www.figma.com/blog/the-figma-canvas-is-now-open-to-agents/"
   },
   {
