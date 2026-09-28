@@ -8,6 +8,7 @@ export type SalesContext = {
   trigger?: string;
   evidence?: string | string[];
   contactVerified?: boolean;
+  deliveryStatus?: "unknown"|"verified"|"delayed"|"failed";
   decisionMakerKnown?: boolean;
   budgetSignal?: boolean;
   proofAvailable?: boolean;
@@ -47,6 +48,7 @@ export function normalizeSalesContext(raw:Record<string,unknown>={}):SalesContex
     trigger:text(raw.trigger||raw.buying_signal||raw.recent_news||raw.recent_change,600),
     evidence:list(raw.evidence),
     contactVerified:Boolean(raw.contactVerified??raw.contact_verified??raw.email),
+    deliveryStatus:(["verified","delayed","failed"].includes(String(raw.deliveryStatus??raw.delivery_status))?String(raw.deliveryStatus??raw.delivery_status):"unknown") as SalesContext["deliveryStatus"],
     decisionMakerKnown:Boolean(raw.decisionMakerKnown??raw.decision_maker_known),
     budgetSignal:Boolean(raw.budgetSignal??raw.budget_signal),
     proofAvailable:Boolean(raw.proofAvailable??raw.proof_available),
@@ -62,13 +64,15 @@ export function scoreOpportunity(raw:Record<string,unknown>|SalesContext):Opport
   const fit=clamp((c.fitReason?55:15)+(c.industry?20:0)+(c.score!==undefined?Math.min(25,c.score/4):0));
   const evidenceScore=clamp(Math.min(100,evidence.length*24+(c.fitReason?20:0)));
   const urgency=clamp(c.trigger?90:15);
-  const access=clamp(c.contactVerified?100:10);
+  const access=clamp(c.deliveryStatus==="failed"?0:c.deliveryStatus==="delayed"?40:c.contactVerified?100:10);
   const decisionProcess=clamp((c.decisionMakerKnown?60:10)+(c.budgetSignal?40:0));
   const proof=clamp(c.proofAvailable?100:(c.previousOutcome?55:20));
   if(!c.fitReason)missing.push("Verified fit reason");
   if(!evidence.length)missing.push("Evidence with a source/date");
   if(!c.trigger)missing.push("Current buying trigger or urgency signal");
   if(!c.contactVerified)missing.push("Verified business contact");
+  if(c.deliveryStatus==="failed")missing.push("Replace the failed/bounced contact before outreach");
+  if(c.deliveryStatus==="delayed")missing.push("Verify email deliverability before another follow-up");
   if(!c.decisionMakerKnown)missing.push("Decision maker / decision process");
   if(!c.proofAvailable)missing.push("Relevant proof asset or case evidence");
   const total=clamp(fit*.28+evidenceScore*.18+urgency*.20+access*.12+decisionProcess*.12+proof*.10);
@@ -168,6 +172,7 @@ export function salesContextFromProspect(prospect:any):SalesContext {
     trigger:metadata.trigger||metadata.buying_signal||metadata.recent_news||metadata.recent_change,
     evidence:[metadata.source_url,metadata.evidence,prospect?.source].filter(Boolean),
     email:prospect?.email,
+    delivery_status:metadata.delivery_status,
     decision_maker_known:Boolean(metadata.decision_maker||metadata.decision_maker_name),
     budget_signal:Boolean(metadata.budget_signal||metadata.budget),
     proof_available:Boolean(metadata.proof_asset||metadata.case_study),
