@@ -13,6 +13,7 @@ const cards=[
   ["Team","Ownership and check-ins","/team",Users],
   ["Creative Library","Shahid’s shoots, edits and approved patterns","/creative-library",Clapperboard],
   ["AI Agents","Plan and review measurable experiments","/agents",Bot],
+  ["AI Training Lab","Quality gates, outcomes and reusable sales lessons","/agents/training",Sparkles],
   ["Automation","Manage no-cost local workflows","/automation",Workflow],
   ["Integrations","Check provider readiness","/integrations",Sparkles],
 ] as const;
