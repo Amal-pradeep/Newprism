@@ -78,7 +78,8 @@ export async function processAgentJob(db:Db,job:{id:string;status:string;input:a
   const modelDraft=await optionalModelDraft(agent,String(job.input.task||""),{...context,approved_lessons:lessons},lessons);
 
   const deterministicEvaluation=(output as any).evaluation||evaluateSalesArtifact(String((output as any).artifact?.body||""),context);
-  const modelEvaluation=modelDraft?evaluateSalesArtifact(modelDraft,context):null;
+  const textDraftAgent=agent==="outreach"||agent==="followup"||agent==="sales";
+  const modelEvaluation=modelDraft&&textDraftAgent?evaluateSalesArtifact(modelDraft,context):null;
   const useModel=Boolean(modelDraft&&modelEvaluation&&modelEvaluation.score>=deterministicEvaluation.score&&modelEvaluation.pass);
   const final={
    ...output,
@@ -96,6 +97,10 @@ export async function processAgentJob(db:Db,job:{id:string;status:string;input:a
   if(error)throw error;
 
   try{
+   try{
+    const evaluation=final.quality_evaluation as any;
+    await db.from("agent_evaluations").insert({organization_id:AGENT_ORG_ID,job_id:job.id,agent_id:agent,score:Number(evaluation?.score||0),grade:String(evaluation?.grade||"D"),passed:Boolean(evaluation?.pass),dimensions:evaluation?.dimensions||[],risks:evaluation?.risks||[],revision:evaluation?.revision||[]});
+   }catch{}
    await agentEvent(db,job.id,"agent.evaluation.completed",{
     agent,score:(final.quality_evaluation as any)?.score||0,
     grade:(final.quality_evaluation as any)?.grade||"D",
