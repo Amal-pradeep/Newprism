@@ -1,27 +1,11 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { createHash } from "crypto";
+import { supabaseAdmin } from "@/lib/supabase";
+import { getSessionUser } from "@/lib/outreach";
+import { teamUser, teamUsers } from "@/lib/team-auth";
 
-export type WorkspaceMember = { email: string; name: string; role: "owner" | "member" };
+export type WorkspaceMember = { email: string; name: string; role: "owner" | "member"; active?: number };
 
-type Statement = {
-  bind(...values: (string | number | null)[]): Statement;
-  first<T>(): Promise<T | null>;
-  all<T>(): Promise<{ results: T[] }>;
-  run(): Promise<{ success: boolean }>;
-};
-export type WorkspaceDb = { prepare(sql: string): Statement };
-
-export function workspaceDb(): WorkspaceDb | null {
-  try {
-    const context = getCloudflareContext() as unknown as { env: { COMIT_DB?: WorkspaceDb } };
-    return context.env.COMIT_DB || null;
-  } catch {
-    return null;
-  }
-}
-
-export function digest(value: string) {
-  return createHash("sha256").update(value).digest("hex");
+export function workspaceClient() {
+  return supabaseAdmin();
 }
 
 export function sameOrigin(request: Request) {
@@ -29,20 +13,40 @@ export function sameOrigin(request: Request) {
   return origin === new URL(request.url).origin;
 }
 
-export async function workspaceMember(db: WorkspaceDb, request: Request): Promise<WorkspaceMember | null> {
-  const raw = request.headers.get("cookie") || "";
-  const token = raw.match(/(?:^|;\s*)comit_workspace=([^;]+)/)?.[1];
-  if (!token || token.length > 128) return null;
-  const row = await db.prepare(
-    "SELECT m.email,m.name,m.role FROM workspace_sessions s JOIN workspace_members m ON m.email=s.email WHERE s.token_hash=? AND s.expires_at>? AND m.active=1"
-  ).bind(digest(token), new Date().toISOString()).first<WorkspaceMember>();
-  return row;
+export function workspaceMember(request: Request): WorkspaceMember | null {
+  const session = getSessionUser(request);
+  if (!session) return null;
+  const known = teamUser(session.email);
+  if (!known) return null;
+  const founders = new Set([
+    (process.env.COMIT_AMAL_EMAIL || "amalpradeep25@gmail.com").toLowerCase(),
+    (process.env.COMIT_AADIL_EMAIL || "aadil.sudhir279@gmail.com").toLowerCase(),
+  ]);
+  return {
+    email: known.email,
+    name: known.name,
+    role: founders.has(known.email.toLowerCase()) ? "owner" : "member",
+    active: 1,
+  };
+}
+
+export function workspaceMembers(): WorkspaceMember[] {
+  const founders = new Set([
+    (process.env.COMIT_AMAL_EMAIL || "amalpradeep25@gmail.com").toLowerCase(),
+    (process.env.COMIT_AADIL_EMAIL || "aadil.sudhir279@gmail.com").toLowerCase(),
+  ]);
+  return teamUsers.map(user => ({
+    ...user,
+    role: founders.has(user.email.toLowerCase()) ? "owner" as const : "member" as const,
+    active: 1,
+  }));
 }
 
 export const workspaceUnavailable = () => Response.json(
-  { error: "Shared workspace is not configured on this deployment." }, { status: 503 }
+  { error: "Shared workspace is not configured. Add Supabase server credentials before using shared records." },
+  { status: 503 }
 );
 export const workspaceUnauthorized = () => Response.json(
-  { error: "Sign in to the shared workspace first." }, { status: 401 }
+  { error: "Sign in with your approved team email first." },
+  { status: 401 }
 );
-
