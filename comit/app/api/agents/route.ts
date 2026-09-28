@@ -26,7 +26,7 @@ async function advanceMission(db:Awaited<ReturnType<typeof requireAdminDb>>,job:
  if(decision==="reject"){
   await db.from("workflow_executions").update({
    status:"paused",
-   output:{progress:{total:steps.length,completed:steps.filter((x:any)=>x.status==="completed").length,failed:steps.filter((x:any)=>x.status==="failed").length+1,active:0,percent:steps.length?Math.round((steps.filter((x:any)=>x.status==="completed").length/steps.length)*100):0},paused_on:job.id,external_action_taken:false}
+   output:{progress:{total:steps.length,completed:steps.filter((x:any)=>x.status==="completed").length,failed:steps.filter((x:any)=>x.status==="failed").length,active:0,percent:steps.length?Math.round((steps.filter((x:any)=>x.status==="completed").length/steps.length)*100):0},paused_on:job.id,external_action_taken:false}
   }).eq("organization_id",ORG_ID).eq("id",missionId);
   await db.from("events").insert({organization_id:ORG_ID,event_type:"super_agent.mission.paused",aggregate_type:"super_agent_mission",aggregate_id:missionId,payload:{job_id:job.id,reason:"step_rejected"}});
   return {missionId,status:"paused"};
