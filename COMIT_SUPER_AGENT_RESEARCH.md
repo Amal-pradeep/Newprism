@@ -224,3 +224,38 @@ No third-party image or design asset is copied into COMIT from these references.
 5. add explicit model/tool budgets per mission
 6. add agent eval datasets from real Prism outcomes
 7. preserve the no-deploy boundary until an explicit production release decision
+
+
+## Research update — 2026-09-29
+
+Further review of the current docs reinforced these implementation choices:
+
+### LangGraph / Deep Agents
+Deep Agents explicitly combines planning, context management/compaction, specialist subagents, persistent memory, declarative permissions and human approval. LangGraph's workflow guidance uses checkpointers for resumable HITL, retry policies and explicit graph nodes. COMIT mirrors the pattern with bounded mission steps, blocked successors, durable workflow rows and founder review rather than importing the framework as a dependency.
+
+### Microsoft Agent Framework
+Current Agent Framework guidance distinguishes:
+- sessions for conversation state
+- context providers for information that should proactively exist on every invocation
+- tools for reactive/on-demand actions
+- workflows when execution order must be guaranteed
+- harness agents for planning/tracking multi-step work
+
+COMIT now has a proactive context envelope that separates working context, reviewed business context and founder-approved training lessons. Private wellness data is excluded from the business-agent context provider.
+
+### MCP 2026-07-28
+The current final MCP specification uses a stateless protocol core. COMIT should target the current protocol shape for any future MCP adapter and avoid designing around the older protocol-level session model. MCP's tool/resource/prompt separation and Skills extension align with COMIT's capability registry + reusable agent skills.
+
+### Local model adapters
+Ollama supports schema-constrained structured outputs. COMIT now has an optional server-side Ollama adapter that requests a JSON object containing an answer and exposes no tools. Local-model use is explicit configuration only; deterministic TypeScript remains the fallback.
+
+### Observability
+OpenTelemetry JavaScript has stable traces and metrics; Langfuse can ingest OTEL and can be self-hosted. COMIT now emits its own vendor-neutral trace IDs and trace records first. This avoids making observability dependent on a hosted vendor while keeping later OTEL/Langfuse export possible.
+
+### Design tooling
+Figma's 2026 agent guidance strongly emphasizes reusable skills, design-system context and self-healing/refinement loops. Figma also states its agent/MCP beta is currently free but intended to become usage-based paid, so it cannot be a permanent dependency under COMIT's no-billing rule.
+
+Penpot is a self-hostable open-source design/prototyping alternative and is now listed as an optional capability for teams that need a free canvas.
+
+### License/cost correction
+n8n is treated in COMIT as source-available/fair-code, not labeled as OSI open source. Self-hosted n8n remains an optional no-charge automation route, with community nodes treated as code-execution risk until reviewed.
