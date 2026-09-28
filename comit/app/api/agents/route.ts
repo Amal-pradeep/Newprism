@@ -3,6 +3,7 @@ import {randomUUID} from "crypto";
 import {getSessionUser,isApprover,requireAdminDb} from "@/lib/outreach";
 import {agentSpecs,toolRegistry,routeAgent,type AgentId} from "@/lib/agent-home";
 import {processAgentJob} from "@/lib/agent-runner";
+import {traceRecord} from "@/lib/agent-tracing";
 
 const ORG_ID="acda1757-1698-405a-8451-5674316ceeaf";
 export const dynamic="force-dynamic";
@@ -15,6 +16,7 @@ async function logEvent(db:Awaited<ReturnType<typeof requireAdminDb>>,jobId:stri
 
 async function advanceMission(db:Awaited<ReturnType<typeof requireAdminDb>>,job:any,decision:"approve"|"reject"){
  const missionId=String(job.input?.context?.missionId||"");
+ const traceId=String(job.input?.context?.traceId||missionId||job.id);
  if(!/^[a-f0-9-]{36}$/i.test(missionId))return null;
  const response=await db.from("workflow_executions")
   .select("id,status,input")
@@ -28,7 +30,7 @@ async function advanceMission(db:Awaited<ReturnType<typeof requireAdminDb>>,job:
    status:"paused",
    output:{progress:{total:steps.length,completed:steps.filter((x:any)=>x.status==="completed").length,failed:steps.filter((x:any)=>x.status==="failed").length,active:0,percent:steps.length?Math.round((steps.filter((x:any)=>x.status==="completed").length/steps.length)*100):0},paused_on:job.id,external_action_taken:false}
   }).eq("organization_id",ORG_ID).eq("id",missionId);
-  await db.from("events").insert({organization_id:ORG_ID,event_type:"super_agent.mission.paused",aggregate_type:"super_agent_mission",aggregate_id:missionId,payload:{job_id:job.id,reason:"step_rejected"}});
+  await db.from("events").insert({organization_id:ORG_ID,event_type:"super_agent.mission.paused",aggregate_type:"super_agent_mission",aggregate_id:missionId,payload:{job_id:job.id,reason:"step_rejected",trace:traceRecord(traceId,"mission.paused","Mission paused",{job_id:job.id})}});
   return {missionId,status:"paused"};
  }
  const currentIndex=Number(job.input?.context?.missionStepIndex||0);
@@ -51,7 +53,7 @@ async function advanceMission(db:Awaited<ReturnType<typeof requireAdminDb>>,job:
   output:{progress:{total:children.length,completed,failed,active,percent:children.length?Math.round((completed/children.length)*100):0},external_action_taken:false},
   ...(done?{completed_at:new Date().toISOString()}:{})
  }).eq("organization_id",ORG_ID).eq("id",missionId);
- await db.from("events").insert({organization_id:ORG_ID,event_type:done?"super_agent.mission.completed":"super_agent.step.unlocked",aggregate_type:"super_agent_mission",aggregate_id:missionId,payload:{completed_job_id:job.id,next_job_id:next?.id||null}});
+ await db.from("events").insert({organization_id:ORG_ID,event_type:done?"super_agent.mission.completed":"super_agent.step.unlocked",aggregate_type:"super_agent_mission",aggregate_id:missionId,payload:{completed_job_id:job.id,next_job_id:next?.id||null,trace:traceRecord(traceId,done?"mission.completed":"mission.step.unlocked",done?"Mission completed":"Mission step unlocked",{completed_job_id:job.id,next_job_id:next?.id||null})}});
  return {missionId,status:done?"completed":"active",nextJobId:next?.id||null};
 }
 
