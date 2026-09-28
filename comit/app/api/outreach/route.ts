@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSessionUser, isApprover, outreachBody, requireAdminDb, sendApprovedEmail, AMAL_EMAIL, AADIL_EMAIL } from "@/lib/outreach";
+import { getSessionUser, isApprover, requireAdminDb, sendApprovedEmail, AMAL_EMAIL, AADIL_EMAIL } from "@/lib/outreach";
+import { buildSalesDraft, salesContextFromProspect } from "@/lib/sales-engine";
+import { evaluateSalesArtifact } from "@/lib/agent-evaluation";
 
 const ORG_ID = "acda1757-1698-405a-8451-5674316ceeaf";
 
@@ -35,8 +37,28 @@ export async function POST(req: Request) {
       if (prospectError || !prospect) return NextResponse.json({ ok: false, error: "Prospect not found." }, { status: 404 });
       if (!prospect.email) return NextResponse.json({ ok: false, error: "This prospect has no verified public business email yet." }, { status: 400 });
 
-      const subject = "A practical growth idea for " + prospect.name;
-      const body = outreachBody(prospect);
+      const context = salesContextFromProspect(prospect);
+      const draft = buildSalesDraft(context, "initial");
+      const quality = evaluateSalesArtifact(draft.body, context);
+
+      if (draft.strategy.score.total < 55) {
+        return NextResponse.json({
+          ok: false,
+          error: "This account needs more research before outreach.",
+          score: draft.strategy.score,
+          missing: draft.strategy.score.missing,
+          next_action: draft.strategy.nextAction
+        }, { status: 409 });
+      }
+      if (!quality.pass) {
+        return NextResponse.json({
+          ok: false,
+          error: "The sales quality gate recommends revision before outreach.",
+          quality,
+          score: draft.strategy.score
+        }, { status: 409 });
+      }
+
       const cc = [AMAL_EMAIL, AADIL_EMAIL];
       const { data, error } = await db.from("outreach_approvals").insert({
         organization_id: prospect.organization_id,
@@ -46,11 +68,27 @@ export async function POST(req: Request) {
         requested_by: user.email,
         to_email: prospect.email,
         cc_emails: cc,
-        subject,
-        body
+        subject: draft.subject,
+        body: draft.body
       }).select().single();
       if (error) throw error;
-      return NextResponse.json({ ok: true, approval: data });
+
+      await db.from("events").insert({
+        organization_id: prospect.organization_id || ORG_ID,
+        event_type: "sales.outreach.prepared",
+        aggregate_type: "prospect",
+        aggregate_id: prospect.id,
+        payload: {
+          approval_id: data.id,
+          opportunity_score: draft.strategy.score.total,
+          opportunity_band: draft.strategy.score.band,
+          quality_score: quality.score,
+          quality_grade: quality.grade,
+          requested_by: user.email
+        }
+      });
+
+      return NextResponse.json({ ok: true, approval: data, quality, strategy: draft.strategy });
     }
 
     if (action === "approve") {
@@ -60,7 +98,9 @@ export async function POST(req: Request) {
       if (approval.status !== "pending") return NextResponse.json({ ok: false, error: "This approval has already been processed." }, { status: 409 });
 
       const approvedAt = new Date().toISOString();
-      const { error: approveError } = await db.from("outreach_approvals").update({ status: "approved", approved_by: user.email, approved_at: approvedAt, updated_at: approvedAt }).eq("id", approval.id).eq("status", "pending");
+      const { error: approveError } = await db.from("outreach_approvals").update({
+        status: "approved", approved_by: user.email, approved_at: approvedAt, updated_at: approvedAt
+      }).eq("id", approval.id).eq("status", "pending");
       if (approveError) throw approveError;
 
       try {
@@ -71,15 +111,19 @@ export async function POST(req: Request) {
           body: approval.body,
           threadId: approval.gmail_thread_id || null,
         });
+
         const sentAt = new Date().toISOString();
-        await db.from("outreach_approvals").update({
+        const approvalUpdate = await db.from("outreach_approvals").update({
           status: "sent",
           gmail_message_id: sent.id || null,
           gmail_thread_id: sent.threadId || approval.gmail_thread_id || null,
           updated_at: sentAt
         }).eq("id", approval.id);
+        if (approvalUpdate.error) throw approvalUpdate.error;
 
-        await db.from("prospects").update({ stage: "contacted", updated_at: sentAt }).eq("id", approval.prospect_id);
+        const prospectUpdate = await db.from("prospects").update({ stage: "contacted", updated_at: sentAt })
+          .eq("id", approval.prospect_id).eq("organization_id", approval.organization_id || ORG_ID)
+          .select("id,stage").maybeSingle();
 
         if ((approval.message_type || "initial") === "initial") {
           await createFollowups(db, approval, sentAt);
@@ -92,9 +136,37 @@ export async function POST(req: Request) {
           action: approval.message_type === "followup" ? "outreach_followup_sent" : "outreach_email_sent",
           entity_type: "outreach_approval",
           entity_id: approval.id,
-          metadata: { approved_by: user.email, to: approval.to_email, cc: approval.cc_emails, gmail_message_id: sent.id || null, gmail_thread_id: sent.threadId || approval.gmail_thread_id || null }
+          metadata: {
+            approved_by: user.email,
+            to: approval.to_email,
+            cc: approval.cc_emails,
+            gmail_message_id: sent.id || null,
+            gmail_thread_id: sent.threadId || approval.gmail_thread_id || null,
+            prospect_stage_synced: Boolean(prospectUpdate.data),
+            prospect_stage_error: prospectUpdate.error?.message || null
+          }
         });
-        return NextResponse.json({ ok: true, status: "sent", gmailMessageId: sent.id || null });
+
+        await db.from("events").insert({
+          organization_id: approval.organization_id || ORG_ID,
+          event_type: "sales.outreach.sent",
+          aggregate_type: "prospect",
+          aggregate_id: approval.prospect_id,
+          payload: {
+            approval_id: approval.id,
+            approved_by: user.email,
+            stage_synced: Boolean(prospectUpdate.data),
+            message_type: approval.message_type || "initial"
+          }
+        });
+
+        return NextResponse.json({
+          ok: true,
+          status: "sent",
+          gmailMessageId: sent.id || null,
+          stageSynced: Boolean(prospectUpdate.data),
+          stageSyncWarning: prospectUpdate.error?.message || null
+        });
       } catch (sendError:any) {
         await db.from("outreach_approvals").update({ status: "failed", error: sendError?.message || "Gmail send failed", updated_at: new Date().toISOString() }).eq("id", approval.id);
         if (approval.followup_id) await db.from("outreach_followups").update({ status: "pending", notes: sendError?.message || "Gmail send failed", updated_at: new Date().toISOString() }).eq("id", approval.followup_id);
@@ -105,7 +177,9 @@ export async function POST(req: Request) {
     if (action === "reject") {
       if (!approvalId) return NextResponse.json({ ok: false, error: "approvalId is required." }, { status: 400 });
       const rejectedAt = new Date().toISOString();
-      const { data:approval, error } = await db.from("outreach_approvals").update({ status: "rejected", approved_by: user.email, approved_at: rejectedAt, updated_at: rejectedAt }).eq("id", approvalId).eq("status", "pending").select("followup_id").single();
+      const { data:approval, error } = await db.from("outreach_approvals").update({
+        status: "rejected", approved_by: user.email, approved_at: rejectedAt, updated_at: rejectedAt
+      }).eq("id", approvalId).eq("status", "pending").select("followup_id").single();
       if (error) throw error;
       if (approval?.followup_id) await db.from("outreach_followups").update({ status: "pending", prepared_approval_id: null, updated_at: rejectedAt }).eq("id", approval.followup_id);
       return NextResponse.json({ ok: true, status: "rejected" });
