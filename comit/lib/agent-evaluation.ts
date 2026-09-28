@@ -5,6 +5,7 @@ export type AgentEvaluation={score:number;grade:"A"|"B"|"C"|"D";pass:boolean;dim
 
 function points(ok:boolean,value:number){return ok?value:0}
 function hasAny(text:string,values:string[]){const t=text.toLowerCase();return values.some(v=>v&&t.includes(v.toLowerCase()))}
+function gradeFor(score:number):AgentEvaluation["grade"]{return score>=85?"A":score>=75?"B":score>=60?"C":"D"}
 
 export function evaluateSalesArtifact(body:string,raw:Record<string,unknown>|SalesContext={}):AgentEvaluation{
   const c=normalizeSalesContext(raw as Record<string,unknown>);
@@ -13,11 +14,12 @@ export function evaluateSalesArtifact(body:string,raw:Record<string,unknown>|Sal
   const dimensions:EvaluationDimension[]=[];
   const risks:string[]=[];
   const revision:string[]=[];
+  const evidenceItems=Array.isArray(c.evidence)?c.evidence.filter(Boolean):typeof c.evidence==="string"&&c.evidence.trim()?[c.evidence.trim()]:[];
 
   const personalization=points(Boolean(c.business)&&hasAny(text,[c.business||""]),14)+points(Boolean(c.industry)&&hasAny(text,[c.industry||""]),6);
   dimensions.push({name:"Personalization",score:personalization,max:20,note:personalization>=14?"Uses account context.":"Use verified business/industry context."});
 
-  const evidence=points(Boolean(c.trigger)&&hasAny(text,[c.trigger||""]),10)+points(Boolean(c.fitReason)&&hasAny(text,[c.fitReason||""]),8)+points(Boolean(c.evidence),7);
+  const evidence=points(Boolean(c.trigger)&&hasAny(text,[c.trigger||""]),10)+points(Boolean(c.fitReason)&&hasAny(text,[c.fitReason||""]),8)+points(evidenceItems.length>0,7);
   dimensions.push({name:"Evidence grounding",score:evidence,max:25,note:evidence>=15?"Grounded in supplied signals.":"Add a verified trigger, fit reason or source-backed observation."});
 
   const relevance=points(/audit|experiment|measure|baseline|result|conversion|lead|order|growth|retention|discovery/i.test(text),10)+points(text.length>=120&&text.length<=1200,10);
@@ -40,6 +42,23 @@ export function evaluateSalesArtifact(body:string,raw:Record<string,unknown>|Sal
   if(text.length>1200)revision.push("Shorten the message.");
 
   const score=dimensions.reduce((sum,d)=>sum+d.score,0);
-  const grade:AgentEvaluation["grade"]=score>=85?"A":score>=75?"B":score>=60?"C":"D";
-  return {score,grade,pass:score>=75&&risks.length===0,dimensions,risks,revision};
+  return {score,grade:gradeFor(score),pass:score>=75&&risks.length===0,dimensions,risks,revision};
+}
+
+export function evaluateSalesStrategy(strategy:{
+  score:{total:number;missing?:string[]};
+  supportedFacts?:string[];
+  nextAction?:string;
+}):AgentEvaluation{
+  const supported=(strategy.supportedFacts||[]).filter(Boolean);
+  const missing=(strategy.score.missing||[]).filter(Boolean);
+  const dimensions:EvaluationDimension[]=[
+    {name:"Account evidence",score:Math.min(35,supported.length*9),max:35,note:supported.length>=3?"Multiple account facts are available.":"More verified account facts are needed."},
+    {name:"Opportunity quality",score:Math.round(Math.max(0,Math.min(100,strategy.score.total))*0.4),max:40,note:"Based on fit, urgency, access, decision process and proof."},
+    {name:"Research completeness",score:missing.length===0?15:Math.max(0,15-missing.length*3),max:15,note:missing.length?"Missing: "+missing.join("; "):"Core qualification signals are present."},
+    {name:"Actionability",score:strategy.nextAction?10:0,max:10,note:strategy.nextAction?"Next action is explicit.":"Add a specific next action."}
+  ];
+  const score=dimensions.reduce((sum,d)=>sum+d.score,0);
+  const revision=missing.slice(0,4).map(item=>"Verify: "+item);
+  return {score,grade:gradeFor(score),pass:score>=70&&supported.length>=2,dimensions,risks:[],revision};
 }
