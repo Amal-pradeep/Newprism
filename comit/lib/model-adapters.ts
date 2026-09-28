@@ -76,6 +76,7 @@ async function ollamaDraft(payload:Record<string,unknown>):Promise<ModelDraftRes
             agent:payload.agent,
             task:payload.task,
             context:payload.context,
+            context_envelope:payload.context_envelope,
             knowledge:payload.knowledge,
             approved_lessons:payload.approved_lessons,
             instruction:payload.instruction
