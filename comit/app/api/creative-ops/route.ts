@@ -184,6 +184,15 @@ export async function POST(req:Request){
         await db.from("tasks").delete().eq("id",created.data.id);
         throw detail.error;
       }
+      if(user!.email.toLowerCase()!==ANEESH_EMAIL){
+        await db.from("notifications").insert({
+          organization_id:ORG_ID,
+          type:"creative_task",
+          title:"New creative task assigned",
+          body:title+(detailInput.clientName?" · "+detailInput.clientName:""),
+          metadata:{target_email:ANEESH_EMAIL,task_id:created.data.id,source:"creative_ops",link:"/creative-ops"}
+        });
+      }
       await logEvent(db,"creative.task.created",created.data.id,{by:user!.email,priority,client:detailInput.clientName||null});
       return NextResponse.json({ok:true,task:created.data,detail:detail.data},{status:201});
     }
