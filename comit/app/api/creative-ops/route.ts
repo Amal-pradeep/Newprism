@@ -216,9 +216,16 @@ export async function POST(req:Request){
         ["clientName","client_name",160],["deliverableType","deliverable_type",120],["platform","platform",120],
         ["objective","objective",500],["audience","audience",500],["offer","offer",500],
         ["brief","brief",6000],["outputSpec","output_spec",1000],["clientFeedback","client_feedback",3000],
-        ["handoffTo","handoff_to",320],["handoffNote","handoff_note",1500]
+        ["handoffNote","handoff_note",1500]
       ] as any[]){
         if(body[key]!==undefined)patch[column]=clean(body[key],limit)||null;
+      }
+      if(body.handoffTo!==undefined){
+        const target=clean(body.handoffTo,320).toLowerCase();
+        if(target&&!teamUsers.some(member=>member.email.toLowerCase()===target)){
+          return NextResponse.json({ok:false,error:"Handoff target must be a COMIT teammate."},{status:400});
+        }
+        patch.handoff_to=target||null;
       }
       if(body.approvalState!==undefined){
         if(!APPROVAL_STATES.has(String(body.approvalState)))return NextResponse.json({ok:false,error:"Invalid approval state."},{status:400});
@@ -226,6 +233,19 @@ export async function POST(req:Request){
       }
       const updated=await db.from("creative_task_details").update(patch).eq("organization_id",ORG_ID).eq("task_id",taskId).select("*").single();
       if(updated.error)throw updated.error;
+      if(patch.handoff_to){
+        const target=teamUsers.find(member=>member.email.toLowerCase()===patch.handoff_to);
+        if(target){
+          await db.from("notifications").insert({
+            organization_id:ORG_ID,
+            type:"creative_handoff",
+            title:"Creative handoff from Aneesh",
+            body:"A creative task needs "+target.name+"'s input: "+String(updated.data.client_name||"Creative task")+".",
+            metadata:{target_email:target.email,task_id:taskId,source:"creative_ops",link:"/creative-ops"}
+          });
+          await logEvent(db,"creative.task.handoff",taskId,{by:user!.email,to:target.email,note:patch.handoff_note||null});
+        }
+      }
       return NextResponse.json({ok:true,detail:updated.data});
     }
 
