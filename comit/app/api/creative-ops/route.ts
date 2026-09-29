@@ -16,7 +16,7 @@ function clean(value:unknown,limit=1000){
   return typeof value==="string"?value.trim().slice(0,limit):"";
 }
 function canRead(user:{email:string}|null){
-  return !!user&&teamUsers.some(member=>member.email.toLowerCase()===user.email.toLowerCase());
+  return canManage(user);
 }
 function canManage(user:{email:string}|null){
   return !!user&&ALLOWED.has(user.email.toLowerCase());
@@ -243,8 +243,8 @@ export async function POST(req:Request){
             organization_id:ORG_ID,
             type:"creative_handoff",
             title:"Creative handoff from Aneesh",
-            body:"A creative task needs "+target.name+"'s input: "+String(updated.data.client_name||"Creative task")+".",
-            metadata:{target_email:target.email,task_id:taskId,source:"creative_ops",link:"/creative-ops"}
+            body:"Aneesh needs your input on "+String(updated.data.client_name||"a creative task")+". "+String(patch.handoff_note||"Open the team workspace and coordinate the next step."),
+            metadata:{target_email:target.email,task_id:taskId,source:"creative_ops",link:"/team/shared"}
           });
           await logEvent(db,"creative.task.handoff",taskId,{by:user!.email,to:target.email,note:patch.handoff_note||null});
         }
