@@ -173,4 +173,15 @@ if (!notificationsApi.includes("target_email") || !notificationsApi.includes("No
   throw new Error("Regression guard: review notifications must remain scoped to the intended teammate.");
 }
 
+const ciWorkflowPath = path.join(root, ".github/workflows/comit.yml");
+if (fs.existsSync(ciWorkflowPath)) {
+  const ciWorkflow = fs.readFileSync(ciWorkflowPath, "utf8");
+  if (/push:|pull_request:/.test(ciWorkflow)) {
+    throw new Error("Regression guard: GitHub verification must remain manual-only under the zero-billing policy.");
+  }
+}
+if (!wranglerConfig.includes('"observability"') || !wranglerConfig.includes('"enabled": false')) {
+  throw new Error("Regression guard: Cloudflare observability must remain disabled under the zero-billing policy.");
+}
+
 console.log("COMIT regression guard passed.");
