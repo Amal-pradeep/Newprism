@@ -10,6 +10,7 @@ import {
   getMetaAdPreview,
   getMetaInsights,
   metaConfigStatus,
+  metaPermissionPlan,
   publishFacebookOrganic,
   publishInstagramContainer
 } from "@/lib/meta-client";
@@ -101,6 +102,7 @@ export async function GET(req:Request){
         canPublish:isApprover(user)
       },
       integration:metaConfigStatus(),
+      metaPermissionPlan,
       workflow:{
         creative:"AI draft -> Aneesh/Shahid review -> creative approved",
         organic:"creative approved -> founder permission -> explicit publish",
