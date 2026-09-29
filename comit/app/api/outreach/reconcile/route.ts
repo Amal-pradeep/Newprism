@@ -208,7 +208,7 @@ export async function GET(req:Request){
 }
 
 export async function POST(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
   try{return NextResponse.json({ok:true,...await reconcile(),synced_at:new Date().toISOString()})}
   catch(error:any){return NextResponse.json({ok:false,error:error?.message||"Gmail reconciliation failed"},{status:502})}
