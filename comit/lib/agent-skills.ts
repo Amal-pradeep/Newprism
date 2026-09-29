@@ -48,6 +48,24 @@ export const agentSkills:AgentSkill[]=[
     requiresApproval:true
   },
   {
+    id:"creative-operations",
+    name:"Creative Operations",
+    purpose:"Help Aneesh turn an overloaded design queue into a prioritized, reviewable delivery system.",
+    triggers:[/design queue/i,/creative task/i,/revision/i,/brief/i,/approval/i,/design task/i,/creative ops/i],
+    preferredAgents:["bi","marketing","support"],
+    instructions:[
+      "Use COMIT tasks as the source of truth; do not create a disconnected to-do list.",
+      "Rank active work by deadline, priority, blocker and revision risk.",
+      "Require objective, audience, platform/format, message and definition of done before heavy production.",
+      "Consolidate feedback into one revision note instead of scattered changes.",
+      "Record internal review, client review, revision and approval states explicitly.",
+      "Handoff video work to Shahid and AI/automation dependencies to Jishnu with one clear note.",
+      "After delivery, archive the final asset and record the reviewed learning."
+    ],
+    success:["Top 3 priorities visible","Every active task has one next action","Revision history preserved","Final asset/approval recorded"],
+    requiresApproval:false
+  },
+  {
     id:"creative-growth-test",
     name:"Creative Growth Test",
     purpose:"Turn a client objective into one measurable creative experiment.",
