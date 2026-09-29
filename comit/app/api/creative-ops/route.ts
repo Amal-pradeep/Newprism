@@ -15,7 +15,10 @@ export const dynamic="force-dynamic";
 function clean(value:unknown,limit=1000){
   return typeof value==="string"?value.trim().slice(0,limit):"";
 }
-function allowed(user:{email:string}|null){
+function canRead(user:{email:string}|null){
+  return !!user&&teamUsers.some(member=>member.email.toLowerCase()===user.email.toLowerCase());
+}
+function canManage(user:{email:string}|null){
   return !!user&&ALLOWED.has(user.email.toLowerCase());
 }
 function validUuid(value:string){
@@ -91,7 +94,7 @@ async function logEvent(db:any,type:string,taskId:string,payload:Record<string,u
 
 export async function GET(req:Request){
   const user=getSessionUser(req);
-  if(!allowed(user))return NextResponse.json({ok:false,error:"Creative Ops access is limited to Aneesh and founders."},{status:403});
+  if(!canRead(user))return NextResponse.json({ok:false,error:"Creative Ops is available to COMIT teammates."},{status:403});
   try{
     const db=await requireAdminDb();
     const tasks=await loadTasks(db);
@@ -115,7 +118,7 @@ export async function GET(req:Request){
       done:tasks.filter((x:any)=>x.status==="done").length
     };
     return NextResponse.json({
-      ok:true,user,owner:{name:"Aneesh",email:ANEESH_EMAIL,role:"Design Lead · Creative"},
+      ok:true,user,permissions:{canManage:canManage(user)},owner:{name:"Aneesh",email:ANEESH_EMAIL,role:"Design Lead · Creative Operations"},
       tasks,focus,summary,
       collaborators:teamUsers.filter(x=>["Shahid","Jishnu","Amal","Aadil"].includes(x.name))
     });
@@ -126,7 +129,7 @@ export async function GET(req:Request){
 
 export async function POST(req:Request){
   const user=getSessionUser(req);
-  if(!allowed(user))return NextResponse.json({ok:false,error:"Creative Ops access is limited to Aneesh and founders."},{status:403});
+  if(!canManage(user))return NextResponse.json({ok:false,error:"Only Aneesh or founders can manage the creative queue."},{status:403});
   const body=await req.json().catch(()=>({}));
   const action=String(body.action||"");
   try{
