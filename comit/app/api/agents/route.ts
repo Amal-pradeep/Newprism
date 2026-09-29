@@ -58,7 +58,7 @@ async function advanceMission(db:Awaited<ReturnType<typeof requireAdminDb>>,job:
 }
 
 export async function GET(req:Request){
- const user=getSessionUser(req);if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
+ const user=await getSessionUser(req);if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
  try{
   const db=await requireAdminDb();
   let query=db.from("workflow_executions").select("id,status,input,output,created_at,completed_at,error").eq("organization_id",ORG_ID).eq("input->>kind","agent_home");
@@ -76,7 +76,7 @@ export async function GET(req:Request){
 }
 
 export async function POST(req:Request){
- const user=getSessionUser(req);if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
+ const user=await getSessionUser(req);if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
  const body=await req.json().catch(()=>({}));
  const action=String(body.action||"create");
  try{
