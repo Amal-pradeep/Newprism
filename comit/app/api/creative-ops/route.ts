@@ -234,9 +234,10 @@ export async function POST(req:Request){
         if(!APPROVAL_STATES.has(String(body.approvalState)))return NextResponse.json({ok:false,error:"Invalid approval state."},{status:400});
         patch.approval_state=String(body.approvalState);
       }
+      const handoffChanged=Boolean(patch.handoff_to&&(String(current.data.handoff_to||"")!==String(patch.handoff_to||"")||String(current.data.handoff_note||"")!==String(patch.handoff_note||"")));
       const updated=await db.from("creative_task_details").update(patch).eq("organization_id",ORG_ID).eq("task_id",taskId).select("*").single();
       if(updated.error)throw updated.error;
-      if(patch.handoff_to){
+      if(handoffChanged&&patch.handoff_to){
         const target=teamUsers.find(member=>member.email.toLowerCase()===patch.handoff_to);
         if(target){
           await db.from("notifications").insert({
