@@ -76,7 +76,10 @@ Smoke-test the preview:
 9. outreach preparation quality gate
 10. founder approval requirement before sending
 11. CRM/outreach reconciliation
-12. no D1 or Cloudflare-service binding errors
+12. Meta Creative Studio draft + creative-review flow
+13. Meta organic publish remains blocked without explicit founder approval
+14. paid Meta ad can only be created PAUSED, then needs a second approval before ACTIVE
+15. no D1 or Cloudflare-service binding errors
 
 ## Required Cloudflare runtime secrets / variables
 
@@ -112,6 +115,16 @@ Optional:
 - `COMIT_MCP_ALLOWLIST`
 
 Do not configure optional model/tool variables unless the corresponding no-charge/self-hosted service has been reviewed.
+
+Optional Meta integration — configure only after the Meta app, asset access and required permissions are approved:
+- `META_GRAPH_API_VERSION=v26.0`
+- `META_ACCESS_TOKEN`
+- `META_PAGE_ID`
+- `META_INSTAGRAM_ACCOUNT_ID`
+- `META_AD_ACCOUNT_ID`
+- `META_EXTERNAL_WRITES_ENABLED=false`
+
+Keep `META_EXTERNAL_WRITES_ENABLED=false` during initial deployment and preview testing. Switch it to `true` only after COMIT's review flow and the Meta account permissions have been verified.
 
 ## Supabase redirect configuration
 
