@@ -94,7 +94,7 @@ async function logEvent(db:any,type:string,taskId:string,payload:Record<string,u
 
 export async function GET(req:Request){
   const user=getSessionUser(req);
-  if(!canRead(user))return NextResponse.json({ok:false,error:"Creative Ops is available to COMIT teammates."},{status:403});
+  if(!canRead(user))return NextResponse.json({ok:false,error:"Creative Ops is limited to Aneesh and founders."},{status:403});
   try{
     const db=await requireAdminDb();
     const tasks=await loadTasks(db);
