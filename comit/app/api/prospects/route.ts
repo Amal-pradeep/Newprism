@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUser, requireAdminDb } from "@/lib/outreach";
 
 export async function GET(req: Request) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return NextResponse.json({ ok: false, error: "Authentication required" }, { status: 401 });
   try {
     const db = await requireAdminDb();
