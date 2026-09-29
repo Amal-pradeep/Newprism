@@ -105,7 +105,9 @@ export default function MetaStudio(){
     primaryColor:"",
     secondaryColor:"",
     adSetId:"",
-    imageHash:""
+    imageHash:"",
+    videoId:"",
+    thumbnailUrl:""
   });
 
   async function load(){
@@ -209,8 +211,9 @@ export default function MetaStudio(){
         <label className="text-xs text-[var(--prism-muted)]">HTTPS asset URL<input type="url" value={form.sourceAssetUrl} onChange={e=>setForm(v=>({...v,sourceAssetUrl:e.target.value}))} className="mt-1 w-full rounded-xl border border-[var(--prism-border)] bg-black/20 px-3 py-2.5 text-sm" placeholder="https://..."/></label>
         <label className="text-xs text-[var(--prism-muted)]">Destination URL<input type="url" value={form.destinationUrl} onChange={e=>setForm(v=>({...v,destinationUrl:e.target.value}))} className="mt-1 w-full rounded-xl border border-[var(--prism-border)] bg-black/20 px-3 py-2.5 text-sm" placeholder="https://..."/></label>
         <label className="text-xs text-[var(--prism-muted)]">Meta ad set ID <span className="opacity-70">paid only</span><input value={form.adSetId} onChange={e=>setForm(v=>({...v,adSetId:e.target.value}))} className="mt-1 w-full rounded-xl border border-[var(--prism-border)] bg-black/20 px-3 py-2.5 text-sm" placeholder="123456..."/></label>
-        <label className="text-xs text-[var(--prism-muted)]">Meta image hash <span className="opacity-70">optional</span><input value={form.imageHash} onChange={e=>setForm(v=>({...v,imageHash:e.target.value}))} className="mt-1 w-full rounded-xl border border-[var(--prism-border)] bg-black/20 px-3 py-2.5 text-sm" placeholder="Existing Meta asset hash"/></label>
+        <label className="text-xs text-[var(--prism-muted)]">Meta image hash <span className="opacity-70">image ads</span><input value={form.imageHash} onChange={e=>setForm(v=>({...v,imageHash:e.target.value}))} className="mt-1 w-full rounded-xl border border-[var(--prism-border)] bg-black/20 px-3 py-2.5 text-sm" placeholder="Existing Meta asset hash"/></label>
       </div>
+      {form.channel==="meta_ads"&&form.mediaType==="video"&&<div className="mt-3 grid gap-3 md:grid-cols-2"><label className="text-xs text-[var(--prism-muted)]">Meta video ID<input value={form.videoId} onChange={e=>setForm(v=>({...v,videoId:e.target.value}))} className="mt-1 w-full rounded-xl border border-[var(--prism-border)] bg-black/20 px-3 py-2.5 text-sm" placeholder="Video already uploaded to the Meta ad account"/></label><label className="text-xs text-[var(--prism-muted)]">Thumbnail URL <span className="opacity-70">optional</span><input type="url" value={form.thumbnailUrl} onChange={e=>setForm(v=>({...v,thumbnailUrl:e.target.value}))} className="mt-1 w-full rounded-xl border border-[var(--prism-border)] bg-black/20 px-3 py-2.5 text-sm" placeholder="https://..."/></label></div>}
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="text-xs text-[var(--prism-muted)]">Primary brand color<input value={form.primaryColor} onChange={e=>setForm(v=>({...v,primaryColor:e.target.value}))} className="mt-1 w-full rounded-xl border border-[var(--prism-border)] bg-black/20 px-3 py-2.5 text-sm" placeholder="#... or brand color name"/></label>
