@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 import {getSessionUser,isApprover,requireAdminDb} from "@/lib/outreach";
 import {teamUsers} from "@/lib/team-auth";
-import {buildMetaCreativePackage,evaluateMetaCreative,type MetaCreativeInput} from "@/lib/meta-creative";
+import {buildMetaCreativePackage,evaluateMetaCreative,summarizeMetaInsights,type MetaCreativeInput} from "@/lib/meta-creative";
 import {
   activateMetaAd,
   createInstagramContainer,
@@ -453,15 +453,26 @@ export async function POST(req:Request){
       const draft=await draftById(db,creativeId);
       if(!draft.meta_object_id)return NextResponse.json({ok:false,error:"This creative has no Meta object yet."},{status:409});
       const insights=await getMetaInsights(draft.meta_object_id);
+      const performance=summarizeMetaInsights(insights);
       await db.from("meta_performance_snapshots").insert({
         organization_id:ORG_ID,
         creative_id:draft.id,
         meta_object_id:draft.meta_object_id,
         object_type:draft.channel==="meta_ads"?"ad":"post",
-        metrics:insights,
+        metrics:{raw:insights,summary:performance},
         source:"meta_api"
       });
-      return NextResponse.json({ok:true,insights});
+      await db.from("meta_creative_drafts").update({
+        creative_package:{...(draft.creative_package||{}),latest_performance:performance},
+        updated_at:new Date().toISOString()
+      }).eq("organization_id",ORG_ID).eq("id",draft.id);
+      await logEvent(db,"meta.performance.refreshed",draft.id,{
+        by:user.email,
+        ctr:performance.metrics.ctr,
+        cpc:performance.metrics.cpc,
+        spend:performance.metrics.spend
+      });
+      return NextResponse.json({ok:true,insights,performance});
     }
 
     return NextResponse.json({ok:false,error:"Unknown Meta Studio action."},{status:400});
