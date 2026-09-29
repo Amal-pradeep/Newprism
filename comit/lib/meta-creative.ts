@@ -257,3 +257,36 @@ export function evaluateMetaCreative(input:MetaCreativeInput,variant:MetaCreativ
   const grade:MetaCreativeEvaluation["grade"]=score>=90?"A":score>=80?"B":score>=70?"C":"D";
   return {score,grade,pass:score>=80&&risks.length===0,dimensions,risks,revisions};
 }
+
+
+export function summarizeMetaInsights(raw:any){
+  const row=Array.isArray(raw?.data)?raw.data[0]||{}:{};
+  const number=(value:unknown)=>{
+    const parsed=Number(value);
+    return Number.isFinite(parsed)?parsed:null;
+  };
+  const metrics={
+    impressions:number(row.impressions),
+    reach:number(row.reach),
+    clicks:number(row.clicks),
+    spend:number(row.spend),
+    cpm:number(row.cpm),
+    cpc:number(row.cpc),
+    ctr:number(row.ctr)
+  };
+  const actions=Array.isArray(row.actions)?row.actions.slice(0,20):[];
+  const costPerAction=Array.isArray(row.cost_per_action_type)?row.cost_per_action_type.slice(0,20):[];
+  const observations:string[]=[];
+  if(metrics.impressions===null)observations.push("No impression data was returned for this window.");
+  if(metrics.ctr!==null)observations.push("CTR is a creative diagnostic, not proof of qualified business results.");
+  if(actions.length)observations.push("Use the action breakdown to identify the business outcome closest to the campaign objective.");
+  observations.push("Compare against the campaign baseline and real qualified leads/orders before promoting this creative into reusable guidance.");
+  return {
+    window:"last_7d",
+    metrics,
+    actions,
+    cost_per_action_type:costPerAction,
+    observations,
+    next_experiment:"Keep audience, offer and placement stable; change one creative variable such as the first hook or proof treatment, then compare qualified outcome cost."
+  };
+}
