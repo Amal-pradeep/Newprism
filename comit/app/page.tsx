@@ -12,6 +12,7 @@ const cards=[
   ["Outreach","Review drafts and follow-ups","/outreach",Mail],
   ["Team","Ownership and check-ins","/team",Users],
   ["Team Pulse","Live focus, blockers and handoffs","/team/pulse",Users],
+  ["Finance AI","Aadil · payments, collections and reminder approvals","/finance",WalletCards],
   ["My Wellness","Private water, break and energy check-ins","/wellness",Activity],
   ["Creative Library","Shahid’s shoots, edits and approved patterns","/creative-library",Clapperboard],
   ["Meta Creative Studio","AI ad concepts, review gates and Meta publishing","/meta-studio",Megaphone],
