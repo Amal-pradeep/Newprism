@@ -149,6 +149,8 @@ export async function createPausedMetaAd(input:{
   destinationUrl:string;
   sourceAssetUrl?:string;
   imageHash?:string;
+  videoId?:string;
+  thumbnailUrl?:string;
   existingPostId?:string;
   cta:string;
   enhancements?:{text_generation?:boolean;image_uncrop?:boolean;image_background_gen?:boolean};
@@ -163,6 +165,21 @@ export async function createPausedMetaAd(input:{
 
   if(input.existingPostId){
     creativeParams={name:input.name,object_story_id:input.existingPostId};
+  }else if(input.videoId){
+    if(!input.destinationUrl)throw new Error("A destination URL is required for a new video ad.");
+    objectStorySpec={
+      page_id:pageId(),
+      ...(igId()?{instagram_user_id:igId()}:{}),
+      video_data:{
+        video_id:input.videoId,
+        title:input.headline,
+        message:input.message,
+        link_description:input.description||undefined,
+        image_url:input.thumbnailUrl||undefined,
+        call_to_action:{type:input.cta,value:{link:input.destinationUrl}}
+      }
+    };
+    creativeParams={name:input.name,object_story_spec:objectStorySpec};
   }else{
     if(!input.destinationUrl)throw new Error("A destination URL is required for a new link ad.");
     if(!input.sourceAssetUrl&&!input.imageHash)throw new Error("A source asset URL or Meta image hash is required.");
