@@ -8,10 +8,11 @@ export default function AuthCallback(){
   useEffect(()=>{
     const hash=new URLSearchParams(window.location.hash.slice(1));
     const token=hash.get("access_token");
+    const refreshToken=hash.get("refresh_token");
     const next=new URLSearchParams(window.location.search).get("next")==="workspace"?"/workspace":"/";
     window.history.replaceState(null,"",window.location.pathname);
     if(!token){setMessage("The sign-in link is invalid or expired. Please request a new one.");return}
-    fetch("/api/auth/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({accessToken:token})})
+    fetch("/api/auth/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({accessToken:token,refreshToken})})
       .then(async response=>{const data=await response.json();if(!response.ok)throw new Error(data.error||"Sign-in failed.");router.replace(next);router.refresh()})
       .catch(error=>setMessage(error.message||"Sign-in failed. Please request a new link."));
   },[router]);
