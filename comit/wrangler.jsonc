@@ -3,7 +3,9 @@
   "name": "comit-by-prism",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-09-29",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "keep_vars": true,
   "send_metrics": false,
   "dependencies_instrumentation": {
@@ -15,5 +17,10 @@
   },
   "observability": {
     "enabled": false
+  },
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://vxejoefeufqaplfsbcpy.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_2YRXqqCNGeIf65o_Rqx3OA_lLe_9Lmf",
+    "META_EXTERNAL_WRITES_ENABLED": "false"
   }
 }
