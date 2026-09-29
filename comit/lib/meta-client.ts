@@ -123,7 +123,11 @@ export async function publishFacebookOrganic(input:{
 }){
   requireWriteConfig();
   if(!pageId())throw new Error("META_PAGE_ID is not configured.");
-  if(input.mediaType==="video")throw new Error("Facebook organic video publishing is not enabled in this COMIT adapter yet.");
+  if(input.mediaType==="video"){
+    if(!input.mediaUrl)throw new Error("Facebook Page video publishing needs a public HTTPS media URL.");
+    const data=await graphRequest(pageId()+"/videos","POST",{file_url:input.mediaUrl,description:input.message,published:true});
+    return {postId:String(data.id||"")};
+  }
   if(input.mediaUrl){
     const data=await graphRequest(pageId()+"/photos","POST",{url:input.mediaUrl,caption:input.message,published:true});
     return {postId:String(data.post_id||data.id||"")};
