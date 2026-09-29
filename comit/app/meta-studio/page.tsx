@@ -3,7 +3,7 @@
 import {FormEvent,useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import {
-  ArrowLeft,BarChart3,CheckCircle2,Eye,Facebook,Image as ImageIcon,
+  ArrowLeft,BarChart3,Eye,Image as ImageIcon,
   Instagram,LoaderCircle,Megaphone,RefreshCw,Send,ShieldCheck,Sparkles,
   TriangleAlert,Video
 } from "lucide-react";
@@ -58,6 +58,7 @@ type Data={
   permissions:{canCreativeReview:boolean;canPublish:boolean};
   integration:{configured:boolean;externalWritesEnabled:boolean;graphVersion:string;adAccountConfigured:boolean;pageConfigured:boolean;instagramConfigured:boolean};
   workflow:{creative:string;organic:string;paid:string};
+  metaPermissionPlan?:Record<string,{minimum:readonly string[];reporting?:readonly string[];optionalAgentMcp?:readonly string[];note:string}>;
   drafts:Draft[];
   error?:string;
 };
@@ -225,7 +226,6 @@ export default function MetaStudio(){
         const selected=variants.find(v=>v.id===draft.selected_variant_id)||variants[0];
         const quality=draft.quality_evaluation||{};
         const pendingCreative=draft.approvals?.find(a=>a.action==="creative_review"&&a.status==="pending");
-        const approvedCreative=draft.approvals?.find(a=>a.action==="creative_review"&&["approved","consumed"].includes(a.status));
         const pendingExternal=draft.approvals?.find(a=>a.action!=="creative_review"&&a.status==="pending");
         const approvedExternal=draft.approvals?.find(a=>a.action!=="creative_review"&&a.status==="approved");
         const previewUrl=draft.meta_payload?.preview?.preview_shareable_link||draft.meta_payload?.activation_preview?.preview_shareable_link;
@@ -276,6 +276,8 @@ export default function MetaStudio(){
       })}
       {!data?.drafts?.length&&<div className="rounded-2xl border border-dashed border-[var(--prism-border)] p-10 text-center"><Megaphone className="mx-auto text-[var(--prism-muted)]"/><p className="mt-3 text-sm">No Meta creative packages yet. Create the first one above.</p></div>}
     </section>
+
+    <section className="mt-7 rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><h2 className="font-medium">Minimum Meta permissions COMIT will request</h2><p className="mt-2 text-sm text-[var(--prism-muted)]">COMIT deliberately avoids asking for every Meta permission. The exact chain depends on whether you connect ads, Facebook Page publishing, or Instagram publishing.</p><div className="mt-4 grid gap-3 md:grid-cols-2">{Object.entries(data?.metaPermissionPlan||{}).map(([key,value])=><article key={key} className="rounded-xl border border-[var(--prism-border)] p-4"><p className="text-sm font-medium">{key.replaceAll("_"," ")}</p><p className="mt-2 text-xs text-[var(--prism-muted)]">{value.minimum.join(" · ")}</p>{value.reporting&&<p className="mt-1 text-xs text-[var(--prism-muted)]">Reporting: {value.reporting.join(" · ")}</p>}<p className="mt-2 text-[11px] text-[var(--prism-muted)]">{value.note}</p></article>)}</div></section>
 
     <section className="mt-7 grid gap-4 lg:grid-cols-2">
       <article className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-5"><div className="flex items-center gap-2"><ShieldCheck size={18}/><h2 className="font-medium">Human permission is part of the product</h2></div><p className="mt-2 text-sm text-[var(--prism-muted)]">Creative review and external execution are separate. Paid ads are created PAUSED first. Activating spend needs another explicit founder approval after the Meta preview is available.</p></article>
