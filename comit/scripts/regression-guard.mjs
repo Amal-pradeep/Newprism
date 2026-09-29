@@ -194,6 +194,9 @@ for (const workflowName of ["comit.yml", "orbit-ci.yml"]) {
 if (!wranglerConfig.includes('"observability"') || !wranglerConfig.includes('"enabled": false')) {
   throw new Error("Regression guard: Cloudflare observability must remain disabled under the zero-billing policy.");
 }
+if (!wranglerConfig.includes('"keep_vars": true') || !wranglerConfig.includes('"send_metrics": false') || !wranglerConfig.includes('"dependencies_instrumentation"')) {
+  throw new Error("Regression guard: Cloudflare deploy must preserve dashboard vars and disable optional Wrangler telemetry.");
+}
 
 const financeAi = fs.readFileSync(path.join(root, "lib/finance-ai.ts"), "utf8");
 const financeApi = fs.readFileSync(path.join(root, "app/api/finance/route.ts"), "utf8");
