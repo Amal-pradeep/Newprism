@@ -173,11 +173,14 @@ if (!notificationsApi.includes("target_email") || !notificationsApi.includes("No
   throw new Error("Regression guard: review notifications must remain scoped to the intended teammate.");
 }
 
-const ciWorkflowPath = path.join(root, ".github/workflows/comit.yml");
-if (fs.existsSync(ciWorkflowPath)) {
-  const ciWorkflow = fs.readFileSync(ciWorkflowPath, "utf8");
-  if (/push:|pull_request:/.test(ciWorkflow)) {
-    throw new Error("Regression guard: GitHub verification must remain manual-only under the zero-billing policy.");
+const repoRoot = path.resolve(root, "..");
+for (const workflowName of ["comit.yml", "orbit-ci.yml"]) {
+  const ciWorkflowPath = path.join(repoRoot, ".github/workflows", workflowName);
+  if (fs.existsSync(ciWorkflowPath)) {
+    const ciWorkflow = fs.readFileSync(ciWorkflowPath, "utf8");
+    if (/\npush:|\npull_request:/.test(ciWorkflow)) {
+      throw new Error("Regression guard: root GitHub workflows must remain manual-only under the zero-billing policy.");
+    }
   }
 }
 if (!wranglerConfig.includes('"observability"') || !wranglerConfig.includes('"enabled": false')) {
