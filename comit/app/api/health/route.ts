@@ -5,17 +5,16 @@ export const dynamic="force-dynamic";
 export async function GET(){
   const runtime={
     supabasePublic:Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL&&process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
-    supabaseAdmin:Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL&&process.env.SUPABASE_SERVICE_ROLE_KEY),
-    sessionAuth:Boolean(process.env.COMIT_SESSION_SECRET),
+    authStrategy:"supabase-user-session-rls",
     gmail:Boolean(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET&&process.env.ORBIT_GMAIL_REFRESH_TOKEN),
     metaConfigured:Boolean(process.env.META_ACCESS_TOKEN),
     metaExternalWritesEnabled:process.env.META_EXTERNAL_WRITES_ENABLED==="true",
     n8n:Boolean(process.env.N8N_COMIT_WEBHOOK_URL||process.env.N8N_AGENT_WEBHOOK_URL)
   };
   return NextResponse.json({
-    ok:true,
+    ok:runtime.supabasePublic,
     service:"COMIT",
-    version:"2026.09-unified-ai-ops",
+    version:"2026.09-unified-ai-ops-runtime-auth",
     mode:runtime.n8n?"n8n-connected":"no-billing",
     capabilities:[
       "win-strategy","prospect-research","sales","marketing","meta-creative-studio",
