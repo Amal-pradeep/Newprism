@@ -101,6 +101,23 @@ export async function GET(req:Request){
       if(response.error)throw response.error;
       approvals=response.data||[];
     }
+    let creativeAssets:any[]=[];
+    const space=await db.from("creative_library_spaces").select("id").eq("organization_id",ORG_ID).eq("slug","shahid-video-creative").maybeSingle();
+    if(space.data?.id){
+      const assets=await db.from("creative_library_assets")
+        .select("id,title,asset_type,storage_path,source_url,tags,metadata,created_at")
+        .eq("space_id",space.data.id).order("created_at",{ascending:false}).limit(30);
+      if(!assets.error){
+        creativeAssets=await Promise.all((assets.data||[]).map(async (asset:any)=>{
+          let url=asset.source_url||null;
+          if(asset.storage_path){
+            const signed=await db.storage.from("comit-creative-library").createSignedUrl(asset.storage_path,900);
+            url=signed.data?.signedUrl||url;
+          }
+          return {...asset,url};
+        }));
+      }
+    }
     return NextResponse.json({
       ok:true,
       user,
@@ -110,6 +127,7 @@ export async function GET(req:Request){
       },
       integration:metaConfigStatus(),
       metaPermissionPlan,
+      creativeAssets,
       workflow:{
         creative:"AI draft -> Aneesh/Shahid review -> creative approved",
         organic:"creative approved -> founder permission -> explicit publish",
@@ -265,6 +283,9 @@ export async function POST(req:Request){
       }
       if(requestedAction==="activate_ad"&&draft.status!=="paused_on_meta"){
         return NextResponse.json({ok:false,error:"Only a reviewed PAUSED Meta ad can request activation."},{status:409});
+      }
+      if(requestedAction==="activate_ad"&&!draft.meta_payload?.preview){
+        return NextResponse.json({ok:false,error:"Refresh and review the real Meta preview before requesting activation/spend approval."},{status:409});
       }
       if(requestedAction!=="activate_ad"&&draft.status!=="creative_approved"){
         return NextResponse.json({ok:false,error:"Creative review must be approved first."},{status:409});
