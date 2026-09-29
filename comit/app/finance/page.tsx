@@ -59,7 +59,12 @@ export default function FinancePage(){
       const r=await fetch("/api/finance",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
       const d=await r.json();
       if(!r.ok)throw new Error(d.error||"Finance action failed");
-      setNotice(d.status==="sent"?"Payment reminder approved and sent through Prism Gmail.":"Finance record updated.");
+      if(d.status==="approved_manual"&&d.mailtoUrl){
+        setNotice("Reminder approved. Opening your mail app with the reviewed content ready to send.");
+        window.location.href=d.mailtoUrl;
+      }else{
+        setNotice(d.status==="sent"?"Payment reminder approved and sent through Prism Gmail.":"Finance record updated.");
+      }
       await load();
       return d;
     }catch(e){setError(e instanceof Error?e.message:"Finance action failed")}
