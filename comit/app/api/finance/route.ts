@@ -35,10 +35,11 @@ async function financeData(db:any){
     approvals:(approvals.data||[]).filter((a:any)=>a.invoice_id===invoice.id),
     payments:(payments.data||[]).filter((p:any)=>p.invoice_id===invoice.id)
   }));
+  const summary=financeSummary(rows);
   return {
     clients:clients.data||[],
-    invoices:rows,
-    summary:financeSummary(rows)
+    invoices:summary.attention,
+    summary
   };
 }
 async function logEvent(db:any,type:string,invoiceId:string,payload:Record<string,unknown>){
@@ -217,8 +218,10 @@ export async function POST(req:Request){
           gmail_thread_id:sent.threadId||null,
           updated_at:new Date().toISOString()
         }).eq("id",approvalId);
+        const countResult=await db.from("finance_invoices").select("reminder_count").eq("id",approval.data.invoice_id).single();
+        const reminderCount=Number(countResult.data?.reminder_count||0)+1;
         await db.from("finance_invoices").update({
-          reminder_count:(await db.from("finance_invoices").select("reminder_count").eq("id",approval.data.invoice_id).single()).data?.reminder_count+1||1,
+          reminder_count:reminderCount,
           last_reminder_at:new Date().toISOString(),
           updated_by:user!.email,
           updated_at:new Date().toISOString()
