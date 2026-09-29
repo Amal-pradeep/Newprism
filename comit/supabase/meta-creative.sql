@@ -16,7 +16,7 @@ create table if not exists public.meta_creative_drafts (
   quality_evaluation jsonb not null default '{}'::jsonb,
   meta_payload jsonb not null default '{}'::jsonb,
   status text not null default 'draft' check (status in (
-    'draft','pending_review','approved','rejected',
+    'draft','creative_review','creative_approved','publish_review','approved','rejected',
     'processing_on_meta','paused_on_meta','published','active_on_meta','failed'
   )),
   created_by text not null,
@@ -32,7 +32,7 @@ create table if not exists public.meta_action_approvals (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null,
   creative_id uuid not null references public.meta_creative_drafts(id) on delete cascade,
-  action text not null check (action in ('publish_organic','create_paused_ad','activate_ad')),
+  action text not null check (action in ('creative_review','publish_organic','create_paused_ad','activate_ad')),
   status text not null default 'pending' check (status in ('pending','approved','rejected','consumed')),
   requested_by text not null,
   reviewed_by text,
