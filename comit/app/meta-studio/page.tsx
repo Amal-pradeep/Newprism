@@ -267,6 +267,7 @@ export default function MetaStudio(){
                 {previewUrl&&<a href={previewUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-violet-400/30 px-3 py-2 text-xs text-violet-100"><Eye size={13}/>Open Meta preview</a>}
               </div>
 
+              {draft.creative_package?.latest_performance&&<div className="mt-4 rounded-xl border border-sky-400/20 bg-sky-500/5 p-3"><p className="text-xs font-medium text-sky-100">Latest 7-day Meta diagnostic</p><div className="mt-2 flex flex-wrap gap-2 text-[11px] text-[var(--prism-muted)]">{Object.entries(draft.creative_package.latest_performance.metrics||{}).filter(([,value])=>value!==null).map(([key,value])=><span key={key} className="rounded-full border border-[var(--prism-border)] px-2 py-1">{key.toUpperCase()} {String(value)}</span>)}</div><p className="mt-2 text-xs text-[var(--prism-muted)]">{draft.creative_package.latest_performance.next_experiment}</p></div>}
               <div className="mt-4 border-t border-[var(--prism-border)] pt-3 text-[11px] text-[var(--prism-muted)]">
                 {draft.approvals?.slice(0,5).map(a=><p key={a.id}>{a.action.replaceAll("_"," ")} · {a.status} · requested by {a.requested_by}{a.reviewed_by?" · reviewed by "+a.reviewed_by:""}</p>)}
                 {!draft.approvals?.length&&<p>No review requests yet.</p>}
