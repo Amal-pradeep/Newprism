@@ -206,6 +206,13 @@ export async function POST(req:Request){
         updated_at:now
       }).eq("id",approvalId).eq("status","pending");
 
+      const gmailConfigured=Boolean(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET&&process.env.ORBIT_GMAIL_REFRESH_TOKEN);
+      if(!gmailConfigured){
+        const mailto="mailto:"+encodeURIComponent(approval.data.to_email)+"?subject="+encodeURIComponent(approval.data.subject)+"&body="+encodeURIComponent(approval.data.body);
+        await logEvent(db,"finance.reminder.approved_manual",approval.data.invoice_id,{by:user!.email,approval_id:approvalId});
+        return NextResponse.json({ok:true,status:"approved_manual",mailtoUrl:mailto});
+      }
+
       try{
         const sent=await sendApprovedEmail({
           to:approval.data.to_email,
