@@ -19,6 +19,11 @@ const required = [
   "lib/model-adapters.ts",
   "lib/agent-skills.ts",
   "lib/free-capabilities.ts",
+  "supabase/meta-creative.sql",
+  "app/meta-studio/page.tsx",
+  "app/api/meta/creative/route.ts",
+  "lib/meta-client.ts",
+  "lib/meta-creative.ts",
   "app/api/agents/training/route.ts",
   "app/api/agents/missions/route.ts",
   "app/agents/training/page.tsx",
@@ -139,6 +144,33 @@ if (wranglerConfig.includes("d1_databases") || wranglerConfig.includes("COMIT_DB
 }
 if (!openNextConfig.includes("defineCloudflareConfig")) {
   throw new Error("Regression guard: OpenNext Cloudflare adapter config is missing.");
+}
+
+const metaCreative = fs.readFileSync(path.join(root, "lib/meta-creative.ts"), "utf8");
+const metaClient = fs.readFileSync(path.join(root, "lib/meta-client.ts"), "utf8");
+const metaApi = fs.readFileSync(path.join(root, "app/api/meta/creative/route.ts"), "utf8");
+const metaSql = fs.readFileSync(path.join(root, "supabase/meta-creative.sql"), "utf8");
+const notificationsApi = fs.readFileSync(path.join(root, "app/api/notifications/route.ts"), "utf8");
+if (!metaClient.includes('META_EXTERNAL_WRITES_ENABLED==="true"') || !metaClient.includes('status:"PAUSED"')) {
+  throw new Error("Regression guard: Meta external writes must be explicitly enabled and paid ads must be created PAUSED.");
+}
+if (!metaApi.includes('"create_paused_ad"') || !metaApi.includes('"activate_ad"') || !metaApi.includes("isApprover")) {
+  throw new Error("Regression guard: paid Meta ads need separate paused-create and activation approvals.");
+}
+if (!metaApi.includes('"creative_review"') || !metaApi.includes("isCreativeReviewer")) {
+  throw new Error("Regression guard: Meta creative-team review gate is missing.");
+}
+if (!metaApi.includes("special_category_review_required") || !metaApi.includes("manual compliance review")) {
+  throw new Error("Regression guard: Meta special/restricted-category manual review gate is missing.");
+}
+if (!metaCreative.includes("evaluateMetaCreative") || !metaCreative.includes("summarizeMetaInsights")) {
+  throw new Error("Regression guard: Meta creative quality/performance evaluation is missing.");
+}
+if (!metaSql.includes("meta_action_approvals") || !metaSql.includes("deny_direct_browser_access")) {
+  throw new Error("Regression guard: Meta approval data must remain server-only.");
+}
+if (!notificationsApi.includes("target_email") || !notificationsApi.includes("Notification does not belong to this teammate")) {
+  throw new Error("Regression guard: review notifications must remain scoped to the intended teammate.");
 }
 
 console.log("COMIT regression guard passed.");

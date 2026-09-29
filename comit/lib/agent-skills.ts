@@ -29,6 +29,25 @@ export const agentSkills:AgentSkill[]=[
     requiresApproval:true
   },
   {
+    id:"meta-creative-director",
+    name:"Meta Creative Director",
+    purpose:"Turn a client objective into beautiful placement-native Meta creative with review-gated publishing and spend.",
+    triggers:[/meta ads/i,/facebook ads/i,/instagram ads/i,/paid social/i,/media buying/i,/meta creative/i],
+    preferredAgents:["research","marketing","bi"],
+    instructions:[
+      "Start from one business objective, one audience, one offer and one truthful proof point.",
+      "Create three differentiated creative angles rather than cosmetic copy variations.",
+      "For Reels, design native 9:16 video with audio/captions and keep key elements inside safe zones.",
+      "Score hook, visual hierarchy, proof, CTA, placement fit, brand consistency and claim risk before review.",
+      "Ask Aneesh to review image/design creative; include Shahid for video/reel execution.",
+      "Organic publishing requires founder permission after creative review.",
+      "Paid ads must be created PAUSED first; review the Meta preview before a second founder approval activates spend.",
+      "Record performance outcomes and promote only reviewed winners into the creative playbook."
+    ],
+    success:["Three placement-ready concepts","Creative quality gate passed","Human review completed","No publish or spend without explicit approval"],
+    requiresApproval:true
+  },
+  {
     id:"creative-growth-test",
     name:"Creative Growth Test",
     purpose:"Turn a client objective into one measurable creative experiment.",

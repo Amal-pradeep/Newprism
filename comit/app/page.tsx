@@ -2,7 +2,7 @@
 
 import {useEffect, useState} from "react";
 import Link from "next/link";
-import {Activity, ArrowUpRight, Bell, Bot, Mail, ShieldCheck, Sparkles, Target, Users, Workflow, Clapperboard, Database} from "lucide-react";
+import {Activity, ArrowUpRight, Bell, Bot, Mail, ShieldCheck, Sparkles, Target, Users, Workflow, Clapperboard, Database, Megaphone} from "lucide-react";
 import ComitAssistant from "@/components/comit-assistant";
 
 const cards=[
@@ -14,6 +14,7 @@ const cards=[
   ["Team Pulse","Live focus, blockers and handoffs","/team/pulse",Users],
   ["My Wellness","Private water, break and energy check-ins","/wellness",Activity],
   ["Creative Library","Shahid’s shoots, edits and approved patterns","/creative-library",Clapperboard],
+  ["Meta Creative Studio","AI ad concepts, review gates and Meta publishing","/meta-studio",Megaphone],
   ["AI Agents","Plan and review measurable experiments","/agents",Bot],
   ["Mission Control","Bounded supervisor and specialist agent missions","/agents/mission-control",Workflow],
   ["AI Training Lab","Quality gates, outcomes and reusable sales lessons","/agents/training",Sparkles],
@@ -24,10 +25,16 @@ const cards=[
 type InstallPrompt=Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:"accepted"|"dismissed"}>};
 
 export default function CommandCenter(){
-  const [nudge,setNudge]=useState("A clear next action is better than another open tab.");
+  const [nudge]=useState("A clear next action is better than another open tab.");
   const [notice,setNotice]=useState("");
+  const [personalAlerts,setPersonalAlerts]=useState<Array<{id:string;type:string;title:string;body?:string|null;metadata:any;read_at?:string|null;created_at:string}>>([]);
+  const [unread,setUnread]=useState(0);
   const [installPrompt,setInstallPrompt]=useState<InstallPrompt|null>(null);
   useEffect(()=>{
+    void fetch("/api/notifications",{cache:"no-store"})
+      .then(r=>r.json())
+      .then(d=>{if(d?.ok){setPersonalAlerts(d.notifications||[]);setUnread(Number(d.unread||0))}})
+      .catch(()=>{});
     const onInstall=(event:Event)=>{event.preventDefault();setInstallPrompt(event as InstallPrompt)};
     window.addEventListener("beforeinstallprompt",onInstall);
     return()=>window.removeEventListener("beforeinstallprompt",onInstall);
@@ -50,7 +57,7 @@ export default function CommandCenter(){
     <div className="mx-auto max-w-7xl">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div><p className="text-xs tracking-wide text-[var(--prism-muted)]">BUSINESS OPERATING SYSTEM</p><h1 className="mt-1 text-3xl font-semibold">Command Center</h1><p className="mt-2 text-sm text-[var(--prism-muted)]">Observe → decide → act → learn. External actions require approval.</p></div>
-        <div className="flex gap-2"><button onClick={notify} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-sm"><Bell size={15}/>Reminder</button><button onClick={install} className="rounded-xl bg-white px-3 py-2 text-sm font-medium text-black">Install app</button></div>
+        <div className="flex gap-2"><button onClick={notify} className="relative inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-sm"><Bell size={15}/>Reminder{unread>0&&<span className="ml-1 rounded-full bg-white px-1.5 py-0.5 text-[10px] font-semibold text-black">{unread}</span>}</button><button onClick={install} className="rounded-xl bg-white px-3 py-2 text-sm font-medium text-black">Install app</button></div>
       </header>
       {notice&&<p role="status" className="mt-4 rounded-xl border border-[var(--prism-border)] p-3 text-sm">{notice}</p>}
       <section aria-label="COMIT sections" className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{cards.map(([label,desc,href,Icon])=><Link href={href} key={href} className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5 transition hover:-translate-y-0.5 hover:bg-white/[.04]"><div className="flex items-center justify-between"><Icon className="text-[var(--prism-violet)]" size={20}/><ArrowUpRight size={16} className="text-[var(--prism-muted)]"/></div><div className="mt-4 font-medium">{label}</div><div className="mt-1 text-xs text-[var(--prism-muted)]">{desc}</div></Link>)}</section>
@@ -59,6 +66,7 @@ export default function CommandCenter(){
         <section className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><div className="flex items-center gap-2"><Activity size={17}/><h2 className="font-medium">Revenue loop</h2></div><p className="mt-2 text-sm text-[var(--prism-muted)]">Research evidence, qualify fit, prepare work for review, then record the result. COMIT does not send, publish, or spend automatically.</p><div className="mt-4 flex flex-wrap gap-2"><Link href="/prospects" className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-sm">Open prospects</Link><Link href="/automation" className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-sm">Review automation</Link></div></section>
         <section className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-5"><div className="flex items-center gap-2"><ShieldCheck size={17}/><h2 className="font-medium">Ready for today</h2></div><p className="mt-2 text-sm text-[var(--prism-muted)]">Sign in with your approved email to use Shared Workspace. No password is required. Email sending and production deployment are paused.</p></section>
       </div>
+      {personalAlerts.length>0&&<section className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-500/5 p-5"><div className="flex items-center gap-2"><Bell size={17}/><h2 className="font-medium">My review requests</h2></div><div className="mt-3 space-y-2">{personalAlerts.slice(0,5).map(alert=><Link key={alert.id} href={alert.type==="meta_approval"?"/meta-studio":"/"} className="block rounded-xl border border-[var(--prism-border)] bg-black/10 p-3"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium">{alert.title}</p>{alert.body&&<p className="mt-1 text-xs text-[var(--prism-muted)]">{alert.body}</p>}</div>{!alert.read_at&&<span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-300"/>}</div></Link>)}</div></section>}
       <section className="mt-5 rounded-2xl border border-violet-400/20 bg-violet-500/5 p-5"><div className="flex items-center gap-3"><Sparkles size={18}/><div><h2 className="font-medium">Next step</h2><p className="mt-1 text-sm text-[var(--prism-muted)]">{nudge}</p></div></div></section>
     </div>
   </main>;

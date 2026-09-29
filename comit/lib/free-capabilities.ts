@@ -2,7 +2,7 @@ export type CapabilityRisk="read"|"draft"|"internal_write"|"external_write"|"cod
 export type Capability={
   id:string;
   name:string;
-  category:"protocol"|"local_model"|"automation"|"plugin_host"|"workspace"|"design";
+  category:"protocol"|"local_model"|"automation"|"plugin_host"|"workspace"|"design"|"observability";
   openSource:boolean;
   noCostCore:boolean;
   purpose:string;
@@ -47,13 +47,6 @@ export const freeCapabilityRegistry:Capability[]=[
     risk:"code_execution",enabledByDefault:false,
     notes:"Admin-only. Community Functions execute arbitrary Python; review source before import. Prefer Tools/MCP over legacy Pipelines.",
     docs:"https://docs.openwebui.com/"
-  },
-  {
-    id:"figma",name:"Figma",category:"design",openSource:false,noCostCore:false,
-    purpose:"Optional design-review and canvas collaboration layer for COMIT UI exploration, reusable design skills and code/design alignment.",
-    risk:"internal_write",enabledByDefault:false,
-    notes:"Do not make COMIT depend on Figma for runtime behavior. Current agent/canvas access may be free during beta but Figma has stated it is intended to become usage-based paid.",
-    docs:"https://www.figma.com/blog/the-figma-canvas-is-now-open-to-agents/"
   },
   {
     id:"langfuse",name:"Langfuse / OpenTelemetry",category:"observability",openSource:true,noCostCore:true,
