@@ -19,6 +19,10 @@ const required = [
   "lib/model-adapters.ts",
   "lib/agent-skills.ts",
   "lib/free-capabilities.ts",
+  "supabase/finance-ai.sql",
+  "app/finance/page.tsx",
+  "app/api/finance/route.ts",
+  "lib/finance-ai.ts",
   "supabase/meta-creative.sql",
   "app/meta-studio/page.tsx",
   "app/api/meta/creative/route.ts",
@@ -185,6 +189,25 @@ for (const workflowName of ["comit.yml", "orbit-ci.yml"]) {
 }
 if (!wranglerConfig.includes('"observability"') || !wranglerConfig.includes('"enabled": false')) {
   throw new Error("Regression guard: Cloudflare observability must remain disabled under the zero-billing policy.");
+}
+
+const financeAi = fs.readFileSync(path.join(root, "lib/finance-ai.ts"), "utf8");
+const financeApi = fs.readFileSync(path.join(root, "app/api/finance/route.ts"), "utf8");
+const financeSql = fs.readFileSync(path.join(root, "supabase/finance-ai.sql"), "utf8");
+if (!financeAi.includes("collectionRisk") || !financeAi.includes("buildPaymentReminder")) {
+  throw new Error("Regression guard: Finance AI risk/reminder engine is missing.");
+}
+if (!financeApi.includes("approve_and_send") || !financeApi.includes("sendApprovedEmail")) {
+  throw new Error("Regression guard: Finance reminder emails must remain approval-gated.");
+}
+if (!financeApi.includes("AADIL_EMAIL") || !financeApi.includes("AMAL_EMAIL")) {
+  throw new Error("Regression guard: Finance workspace must remain founder/Aadil scoped.");
+}
+if (!financeSql.includes("finance_email_approvals") || !financeSql.includes("deny_direct_browser_access")) {
+  throw new Error("Regression guard: Finance ledger and reminder approvals must remain server-only.");
+}
+if (!financeSql.includes("seed-al-eliza-pending-1000") || !financeSql.includes("seed-nostaza-paid-1500-one-month")) {
+  throw new Error("Regression guard: founder-provided opening balances are missing from the Finance AI seed.");
 }
 
 console.log("COMIT regression guard passed.");
