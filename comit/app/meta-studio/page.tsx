@@ -29,6 +29,7 @@ type Variant={
   visualDirection:string[];
   motionPlan:string[];
   generationPrompt:string;
+  altText:string;
 };
 type Draft={
   id:string;
