@@ -1,6 +1,28 @@
 const GRAPH_VERSION=process.env.META_GRAPH_API_VERSION||"v26.0";
 const GRAPH_ROOT="https://graph.facebook.com/"+GRAPH_VERSION;
 
+
+export const metaPermissionPlan={
+  ads:{
+    minimum:["ads_management","pages_read_engagement","pages_show_list"],
+    reporting:["ads_read"],
+    optionalAgentMcp:["ads_mcp_management"],
+    note:"Managing client ad accounts can require Meta App Review/Advanced Access and Business Verification."
+  },
+  facebookOrganic:{
+    minimum:["pages_manage_posts","pages_read_engagement","pages_show_list"],
+    note:"Page publishing access should be requested only when the product actually publishes Page content."
+  },
+  instagramFacebookLogin:{
+    minimum:["instagram_basic","instagram_content_publish"],
+    note:"For Instagram professional accounts connected through Facebook Login; page dependencies may also apply."
+  },
+  instagramBusinessLogin:{
+    minimum:["instagram_business_basic","instagram_business_content_publish"],
+    note:"Business Login for Instagram offers a separate permission chain for professional-account publishing."
+  }
+} as const;
+
 export type MetaConfigStatus={
   configured:boolean;
   externalWritesEnabled:boolean;
