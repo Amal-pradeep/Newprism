@@ -54,7 +54,7 @@ export function collectionRisk(invoice:FinanceInvoiceLike):CollectionRisk{
 
 function greeting(client:string){return "Hi "+client+" team,";}
 function signature(){
-  return ["Regards,","Aadil Sudhir","Founder · Finance & Compliance","Prism of Stories"].join("\n");
+  return ["Regards,","Aadil","Founder · Finance & Compliance","Prism of Stories"].join("\n");
 }
 
 export function buildPaymentReminder(invoice:FinanceInvoiceLike){
