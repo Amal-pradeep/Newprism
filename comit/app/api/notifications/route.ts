@@ -11,7 +11,7 @@ const nudges=[
 export const dynamic="force-dynamic";
 
 export async function GET(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
   const hour=new Date().getHours();
   try{
@@ -46,7 +46,7 @@ export async function GET(req:Request){
 }
 
 export async function POST(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
   const body=await req.json().catch(()=>({}));
   const id=String(body.id||"");
