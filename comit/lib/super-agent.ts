@@ -47,7 +47,14 @@ export function buildSuperMission(task:string,context:Record<string,unknown>={})
   const skill=selectAgentSkill(goal);
   const steps:MissionStep[]=[];
 
-  if(has(task,/lead|prospect|sales|outreach|client acquisition|revenue/)){
+  if(has(task,/finance|payment|invoice|outstanding|overdue|collection|cashflow|receivable/)){
+    steps.push(
+      step("ledger","Verify finance record","bi","Check invoice amount, paid amount, currency, agreed due date and payment history.","Balance and aging are grounded in the ledger; missing due dates are explicit.","read"),
+      step("risk","Assess collection risk","bi","Classify the payment as paid, pending, partial or overdue and identify the least aggressive appropriate next step.","Risk band and next action are justified by payment history.","read",["ledger"]),
+      step("draft","Prepare payment follow-up","support","Prepare a concise, respectful payment reminder using only verified ledger facts.","Reminder is approval-ready and contains no invented due date, threat or unsupported claim.","draft",["risk"]),
+      step("review","Founder/Aadil review","sales","Present the exact reminder content and sending action for human approval.","No external email is sent before approval.","draft",["draft"])
+    );
+  }else if(has(task,/lead|prospect|sales|outreach|client acquisition|revenue/)){
     steps.push(
       step("research","Verify account evidence","research","Find current account facts, trigger, source quality and missing evidence.","At least two useful verified facts or a clear research gap.","read"),
       step("qualify","Qualify the opportunity","qualification","Score fit, urgency, access, decision process and proof readiness.","Opportunity has a justified band and missing signals.","read",["research"]),
