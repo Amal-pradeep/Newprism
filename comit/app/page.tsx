@@ -2,7 +2,7 @@
 
 import {useEffect, useState} from "react";
 import Link from "next/link";
-import {Activity, ArrowUpRight, Bell, Bot, Mail, ShieldCheck, Sparkles, Target, Users, Workflow, Clapperboard, Database, Megaphone} from "lucide-react";
+import {Activity, ArrowUpRight, Bell, Bot, Mail, ShieldCheck, Sparkles, Target, Users, Workflow, Clapperboard, Database, Megaphone, WalletCards, Palette} from "lucide-react";
 import ComitAssistant from "@/components/comit-assistant";
 
 const cards=[
@@ -14,6 +14,7 @@ const cards=[
   ["Team Pulse","Live focus, blockers and handoffs","/team/pulse",Users],
   ["Finance AI","Aadil · payments, collections and reminder approvals","/finance",WalletCards],
   ["My Wellness","Private water, break and energy check-ins","/wellness",Activity],
+  ["Creative Ops","Aneesh · briefs, tasks, revisions and approvals","/creative-ops",Palette],
   ["Creative Library","Shahid’s shoots, edits and approved patterns","/creative-library",Clapperboard],
   ["Meta Creative Studio","AI ad concepts, review gates and Meta publishing","/meta-studio",Megaphone],
   ["AI Agents","Plan and review measurable experiments","/agents",Bot],
