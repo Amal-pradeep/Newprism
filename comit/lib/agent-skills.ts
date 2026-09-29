@@ -64,6 +64,23 @@ export const agentSkills:AgentSkill[]=[
     requiresApproval:true
   },
   {
+    id:"finance-collections",
+    name:"Finance Collections",
+    purpose:"Turn client payment records into a clear collection decision, safe reminder draft and auditable next action.",
+    triggers:[/finance/i,/payment/i,/invoice/i,/outstanding/i,/overdue/i,/collection/i,/cashflow/i,/receivable/i],
+    preferredAgents:["bi","support","sales"],
+    instructions:[
+      "Use the finance ledger as the source of truth for amount, currency, paid amount and due date.",
+      "Never label a payment delayed when the agreed due date is missing.",
+      "Separate paid, partially paid, pending and genuinely overdue balances.",
+      "Prepare polite reminder copy that asks for a payment date or transfer reference without making legal threats.",
+      "Do not send payment emails automatically. Aadil or Amal must review and approve the exact content.",
+      "Record every payment, reminder and client response so future collection decisions use real history."
+    ],
+    success:["Correct balance and aging","Clear next collection action","Approval-ready reminder when needed","No email sent without founder/Aadil approval"],
+    requiresApproval:true
+  },
+  {
     id:"client-risk-rescue",
     name:"Client Risk Rescue",
     purpose:"Handle complaints, churn risk or delivery blockers without losing factual discipline.",
