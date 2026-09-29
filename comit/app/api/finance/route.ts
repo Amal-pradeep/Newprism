@@ -53,7 +53,7 @@ async function logEvent(db:any,type:string,invoiceId:string,payload:Record<strin
 }
 
 export async function GET(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!isFinanceUser(user))return NextResponse.json({ok:false,error:"Finance access is limited to Amal and Aadil."},{status:403});
   try{
     const db=await requireAdminDb();
@@ -70,7 +70,7 @@ export async function GET(req:Request){
 }
 
 export async function POST(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!isFinanceUser(user))return NextResponse.json({ok:false,error:"Finance access is limited to Amal and Aadil."},{status:403});
   const body=await req.json().catch(()=>({}));
   const action=String(body.action||"");
