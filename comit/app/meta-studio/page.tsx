@@ -59,6 +59,7 @@ type Data={
   integration:{configured:boolean;externalWritesEnabled:boolean;graphVersion:string;adAccountConfigured:boolean;pageConfigured:boolean;instagramConfigured:boolean};
   workflow:{creative:string;organic:string;paid:string};
   metaPermissionPlan?:Record<string,{minimum:readonly string[];reporting?:readonly string[];optionalAgentMcp?:readonly string[];note:string}>;
+  creativeAssets?:Array<{id:string;title:string;asset_type:string;url?:string|null;metadata?:{mime_type?:string};tags?:string[]}>;
   drafts:Draft[];
   error?:string;
 };
@@ -207,6 +208,7 @@ export default function MetaStudio(){
         <label className="text-xs text-[var(--prism-muted)]">Proof<textarea maxLength={300} rows={3} value={form.proof} onChange={e=>setForm(v=>({...v,proof:e.target.value}))} className="mt-1 w-full rounded-xl border border-[var(--prism-border)] bg-black/20 px-3 py-2.5 text-sm" placeholder="Real product/client/process proof"/></label>
       </div>
 
+      {!!data?.creativeAssets?.length&&<div className="mt-5"><p className="text-xs font-medium">Use an asset from COMIT Creative Library</p><div className="mt-2 flex gap-2 overflow-x-auto pb-2">{data.creativeAssets.slice(0,12).map(asset=><button type="button" key={asset.id} disabled={!asset.url} onClick={()=>asset.url&&setForm(v=>({...v,sourceAssetUrl:asset.url||"",mediaType:String(asset.metadata?.mime_type||"").startsWith("video/")?"video":"image"}))} className="min-w-[190px] rounded-xl border border-[var(--prism-border)] p-3 text-left disabled:opacity-40"><p className="truncate text-xs font-medium">{asset.title}</p><p className="mt-1 text-[10px] text-[var(--prism-muted)]">{asset.asset_type.replaceAll("_"," ")} · {asset.metadata?.mime_type||"reference"}</p></button>)}</div></div>}
       <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <label className="text-xs text-[var(--prism-muted)]">HTTPS asset URL<input type="url" value={form.sourceAssetUrl} onChange={e=>setForm(v=>({...v,sourceAssetUrl:e.target.value}))} className="mt-1 w-full rounded-xl border border-[var(--prism-border)] bg-black/20 px-3 py-2.5 text-sm" placeholder="https://..."/></label>
         <label className="text-xs text-[var(--prism-muted)]">Destination URL<input type="url" value={form.destinationUrl} onChange={e=>setForm(v=>({...v,destinationUrl:e.target.value}))} className="mt-1 w-full rounded-xl border border-[var(--prism-border)] bg-black/20 px-3 py-2.5 text-sm" placeholder="https://..."/></label>
