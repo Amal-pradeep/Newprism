@@ -182,7 +182,9 @@ export async function POST(req:Request){
           location:input.location||"",
           destination_url:input.destinationUrl||"",
           ad_set_id:safe(body.adSetId,80),
-          image_hash:safe(body.imageHash,200)
+          image_hash:safe(body.imageHash,200),
+          video_id:safe(body.videoId,200),
+          thumbnail_url:safe(body.thumbnailUrl,1000)
         },
         status:"draft",
         created_by:user.email
@@ -390,6 +392,7 @@ export async function POST(req:Request){
       if(approval.action==="create_paused_ad"){
         const adSetId=safe(draft.meta_payload?.ad_set_id,100);
         if(!adSetId)return NextResponse.json({ok:false,error:"A Meta ad set ID is required before creating the paused ad."},{status:400});
+        if(draft.media_type==="video"&&!draft.meta_payload?.video_id)return NextResponse.json({ok:false,error:"Paid video/Reels ads need a Meta video ID already uploaded to this ad account."},{status:400});
         const created=await createPausedMetaAd({
           name:draft.client_name+" · "+variant.angle.slice(0,50),
           adSetId,
@@ -399,6 +402,8 @@ export async function POST(req:Request){
           destinationUrl:String(draft.meta_payload?.destination_url||""),
           sourceAssetUrl:draft.source_asset_url||undefined,
           imageHash:draft.meta_payload?.image_hash||undefined,
+          videoId:draft.meta_payload?.video_id||undefined,
+          thumbnailUrl:draft.meta_payload?.thumbnail_url||undefined,
           cta:variant.cta,
           enhancements:variant.metaEnhancements
         });
