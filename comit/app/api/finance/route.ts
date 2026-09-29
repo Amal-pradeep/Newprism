@@ -26,12 +26,12 @@ async function financeData(db:any){
   if(invoices.error)throw invoices.error;
   if(approvals.error)throw approvals.error;
   if(payments.error)throw payments.error;
-  const clientMap=new Map((clients.data||[]).map((c:any)=>[c.id,c]));
+  const clientMap=new Map<string,any>((clients.data||[]).map((c:any)=>[String(c.id),c]));
   const rows=(invoices.data||[]).map((invoice:any)=>({
     ...invoice,
-    client_name:clientMap.get(invoice.client_id)?.name||"Unknown client",
-    billing_email:clientMap.get(invoice.client_id)?.billing_email||null,
-    client_notes:clientMap.get(invoice.client_id)?.notes||null,
+    client_name:clientMap.get(String(invoice.client_id))?.name||"Unknown client",
+    billing_email:clientMap.get(String(invoice.client_id))?.billing_email||null,
+    client_notes:clientMap.get(String(invoice.client_id))?.notes||null,
     approvals:(approvals.data||[]).filter((a:any)=>a.invoice_id===invoice.id),
     payments:(payments.data||[]).filter((p:any)=>p.invoice_id===invoice.id)
   }));
