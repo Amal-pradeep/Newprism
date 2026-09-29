@@ -18,7 +18,7 @@ async function getSpace(db: NonNullable<ReturnType<typeof supabaseAdmin>>) {
 }
 
 export async function GET(req: Request) {
-  if (!getSessionUser(req)) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  if (!(await getSessionUser(req))) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   const db = supabaseAdmin();
   if (!db) return NextResponse.json({ error: "Shared library storage is not configured yet." }, { status: 503 });
   const space = await getSpace(db);
@@ -36,7 +36,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   const db = supabaseAdmin();
   if (!db) return NextResponse.json({ error: "Shared library storage is not configured yet." }, { status: 503 });
