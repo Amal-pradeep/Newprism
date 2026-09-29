@@ -3,7 +3,7 @@ import {getSessionUser,requireAdminDb} from "@/lib/outreach";
 const ORG_ID="acda1757-1698-405a-8451-5674316ceeaf";
 export const dynamic="force-dynamic";
 export async function GET(req:Request){
- const user=getSessionUser(req); if(!user)return NextResponse.json({error:"Authentication required"},{status:401});
+ const user=await getSessionUser(req); if(!user)return NextResponse.json({error:"Authentication required"},{status:401});
  try{const db=await requireAdminDb();
   const [{data:members,error:memberError},{data:templates,error:templateError}]=await Promise.all([
    db.from("team_profiles").select("id,name,email,phone,role,focus,initials,logo_key,color_token,daily_target,automation_lane,active").eq("organization_id",ORG_ID).eq("active",true).order("name"),
