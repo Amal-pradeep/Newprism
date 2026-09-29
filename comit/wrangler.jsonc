@@ -1,28 +1,19 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "comit",
+  "name": "comit-by-prism",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2026-09-24",
+  "compatibility_date": "2026-09-29",
   "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
+  "send_metrics": false,
+  "dependencies_instrumentation": {
+    "enabled": false
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  "services": [
-    {
-      "binding": "WORKER_SELF_REFERENCE",
-      "service": "comit"
-    }
-  ],
-  "d1_databases": [
-    {
-      "binding": "COMIT_DB",
-      "database_name": "comit-team",
-      "database_id": "dca7f965-103c-48c3-81fd-c6e4ee08d430"
-    }
-  ],
   "observability": {
-    "enabled": true
+    "enabled": false
   }
 }
-

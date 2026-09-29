@@ -1,26 +1,22 @@
 import Link from "next/link";
-import {Database,ExternalLink,Instagram,MessageCircle,ShieldAlert,Workflow} from "lucide-react";
+import {Database,GitBranch,HardDrive,Mail,Megaphone,Plug,ShieldAlert,Workflow} from "lucide-react";
+import {freeCapabilityRegistry} from "@/lib/free-capabilities";
 
-const publicLinks=[
-  {name:"Prism of Stories website",status:"Public link only; no COMIT integration",url:"https://prismofstories.com",icon:ExternalLink},
-  {name:"Instagram",status:"Public profile only; OAuth is not connected",url:"https://instagram.com/prismofstories",icon:Instagram},
-  {name:"WhatsApp",status:"Public click-to-chat only; team accounts are not connected",url:"https://wa.me/919745643726",icon:MessageCircle},
-];
-const blocked=[
-  {name:"Supabase",status:"Not configured; CRM data endpoints are unavailable"},
-  {name:"Gmail",status:"Not configured; sending and synchronization are disabled"},
-  {name:"n8n",status:"Blocked; external workflow calls are disabled"},
-  {name:"AI provider",status:"Deterministic local logic only; external model calls are blocked"},
-  {name:"Cloudflare Access",status:"Not activated because it requires a payment card and overage authorization"},
+const stack=[
+  {name:"GitHub",status:"Source of truth. Changes go to a feature branch and review before production.",icon:GitBranch},
+  {name:"Supabase",status:"Email-only authentication, shared state, missions and private teammate records. Server credentials required.",icon:Database},
+  {name:"Google Drive",status:"Connected in ChatGPT for Prism files; COMIT should ingest only reviewed extracts, not mirror private documents into public Git.",icon:HardDrive},
+  {name:"Gmail",status:"Sales sending remains founder-approved. Reconciliation should classify replies, delays and delivery failures separately.",icon:Mail},
+  {name:"n8n",status:"Use self-hosted/no-charge workflows and reviewed community nodes only. Unverified nodes are code-execution risk.",icon:Workflow},
+  {name:"Meta",status:"Creative can be prepared without credentials. Actual Page/Instagram publishing or Ads management needs a Meta app, the minimum approved permissions, client asset authorization, and COMIT’s explicit external-write switch.",icon:Megaphone},
 ];
 
 export default function Integrations(){return <main className="min-h-screen bg-[var(--prism-bg)] p-5 pb-24 text-[var(--prism-text)] lg:p-8"><div className="mx-auto max-w-6xl">
-  <p className="text-xs tracking-wide text-[var(--prism-muted)]">CONNECTIVITY LAYER</p><h1 className="mt-1 text-3xl font-semibold">Business integrations</h1><p className="mt-2 max-w-3xl text-sm text-[var(--prism-muted)]">This inventory is explicit and read-only. A public profile link does not mean a private API is connected.</p>
-  <div className="mt-5 flex items-start gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm"><ShieldAlert size={18} className="shrink-0"/><p>Hard cost stop: no paid plans, metered overages, or usage-based AI. Keep integrations disabled until authentication and a provider-side no-charge limit are verified.</p></div>
-  <section className="mt-7 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-5"><div className="flex items-center gap-2"><Database size={18}/><h2 className="font-medium">Cloudflare D1 shared database</h2></div><p className="mt-2 text-sm text-[var(--prism-muted)]">The team database is on the Workers Free plan. Usage stops when free limits are reached. The private <Link href="/workspace" className="underline">Shared Workspace</Link> uses individual passwords; Amal can activate his password from the sign-in page before creating teammate passwords.</p></section>
-  <section className="mt-7"><h2 className="text-lg font-semibold">Public links</h2><div className="mt-3 grid gap-4 md:grid-cols-3">{publicLinks.map(({name,status,url,icon:Icon})=><article key={name} className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><Icon size={18}/><h3 className="mt-3 font-medium">{name}</h3><p className="mt-1 text-xs text-[var(--prism-muted)]">{status}</p><a href={url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 text-xs underline">Open link <ExternalLink size={13}/></a></article>)}</div></section>
-  <section className="mt-7"><h2 className="text-lg font-semibold">Disabled or unverified</h2><div className="mt-3 grid gap-3 md:grid-cols-2">{blocked.map(item=><article key={item.name} className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-4"><div className="flex items-start gap-3"><Workflow size={17} className="mt-0.5 text-amber-300"/><div><h3 className="text-sm font-medium">{item.name}</h3><p className="mt-1 text-xs text-[var(--prism-muted)]">{item.status}</p></div></div></article>)}</div></section>
-  <p className="mt-6 text-sm text-[var(--prism-muted)]">Use Shared Workspace for team records after sign-in. See <Link href="/automation" className="underline">Automation</Link> for local workflows.</p>
+  <p className="text-xs tracking-wide text-[var(--prism-muted)]">CONNECTIVITY LAYER</p><h1 className="mt-1 text-3xl font-semibold">Git-first, no-billing integrations</h1><p className="mt-2 max-w-3xl text-sm text-[var(--prism-muted)]">COMIT can prepare and store work without deploying it. Production changes, external writes and code-executing plugins remain review-gated.</p>
+  <div className="mt-5 flex items-start gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm"><ShieldAlert size={18} className="shrink-0"/><p>Hard stop: no automatic production deployment, no metered AI dependency, no automatic external sending/publishing/ad spend, and no blind plugin installs. Push code to Git for review first.</p></div>
+  <section className="mt-7 grid gap-4 md:grid-cols-2">{stack.map(({name,status,icon:Icon})=><article key={name} className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5"><Icon size={18}/><h2 className="mt-3 font-medium">{name}</h2><p className="mt-1 text-sm text-[var(--prism-muted)]">{status}</p></article>)}</section>
+
+  <section className="mt-7 rounded-2xl border border-violet-400/20 bg-violet-500/5 p-5"><div className="flex items-center gap-2"><Plug size={18}/><h2 className="font-medium">Reviewed open-source capability shelf</h2></div><p className="mt-2 text-sm text-[var(--prism-muted)]">These are architecture options COMIT can use without making them mandatory dependencies. Optional tools stay off until their source, permissions and runtime cost are reviewed.</p><div className="mt-4 grid gap-3 md:grid-cols-2">{freeCapabilityRegistry.map(item=><article key={item.id} className="rounded-xl border border-[var(--prism-border)] bg-black/10 p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-medium">{item.name}</p><p className="mt-1 text-xs text-[var(--prism-muted)]">{item.purpose}</p></div><span className={"rounded-full border px-2 py-1 text-[10px] "+(item.enabledByDefault?"border-emerald-400/30 text-emerald-200":"border-violet-400/30 text-violet-200")}>{item.enabledByDefault?"core-ready":"optional-review"}</span></div><p className="mt-3 text-[11px] text-[var(--prism-muted)]">{item.openSource?"Open source":"Service"} · risk {item.risk} · {item.noCostCore?"no-cost core":"cost varies"}</p><p className="mt-2 text-[11px] text-[var(--prism-muted)]">{item.notes}</p></article>)}</div></section>
+
+  <section className="mt-7 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-5"><h2 className="font-medium">Workspace access</h2><p className="mt-2 text-sm text-[var(--prism-muted)]">Approved teammates enter their email and use the verification link sent to that inbox. Password login is disabled.</p><div className="mt-4 flex flex-wrap gap-3"><Link href="/workspace" className="underline">Open Shared Workspace</Link><Link href="/agents/mission-control" className="underline">Open Mission Control</Link><Link href="/meta-studio" className="underline">Open Meta Creative Studio</Link></div></section>
 </div></main>}
-
-

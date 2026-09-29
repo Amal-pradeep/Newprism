@@ -3,6 +3,7 @@ import {randomUUID} from "crypto";
 import {getSessionUser,isApprover,requireAdminDb} from "@/lib/outreach";
 import {agentSpecs,toolRegistry,routeAgent,type AgentId} from "@/lib/agent-home";
 import {processAgentJob} from "@/lib/agent-runner";
+import {traceRecord} from "@/lib/agent-tracing";
 
 const ORG_ID="acda1757-1698-405a-8451-5674316ceeaf";
 export const dynamic="force-dynamic";
@@ -10,6 +11,50 @@ export const dynamic="force-dynamic";
 async function logEvent(db:Awaited<ReturnType<typeof requireAdminDb>>,jobId:string,event_type:string,payload:Record<string,unknown>){
  const {error}=await db.from("events").insert({organization_id:ORG_ID,event_type,aggregate_type:"agent_job",aggregate_id:jobId,payload});
  if(error)throw error;
+}
+
+
+async function advanceMission(db:Awaited<ReturnType<typeof requireAdminDb>>,job:any,decision:"approve"|"reject"){
+ const missionId=String(job.input?.context?.missionId||"");
+ const traceId=String(job.input?.context?.traceId||missionId||job.id);
+ if(!/^[a-f0-9-]{36}$/i.test(missionId))return null;
+ const response=await db.from("workflow_executions")
+  .select("id,status,input")
+  .eq("organization_id",ORG_ID)
+  .eq("input->>kind","agent_home")
+  .eq("input->context->>missionId",missionId);
+ if(response.error)throw response.error;
+ const steps=(response.data||[]).sort((a:any,b:any)=>Number(a.input?.context?.missionStepIndex||0)-Number(b.input?.context?.missionStepIndex||0));
+ if(decision==="reject"){
+  await db.from("workflow_executions").update({
+   status:"paused",
+   output:{progress:{total:steps.length,completed:steps.filter((x:any)=>x.status==="completed").length,failed:steps.filter((x:any)=>x.status==="failed").length,active:0,percent:steps.length?Math.round((steps.filter((x:any)=>x.status==="completed").length/steps.length)*100):0},paused_on:job.id,external_action_taken:false}
+  }).eq("organization_id",ORG_ID).eq("id",missionId);
+  await db.from("events").insert({organization_id:ORG_ID,event_type:"super_agent.mission.paused",aggregate_type:"super_agent_mission",aggregate_id:missionId,payload:{job_id:job.id,reason:"step_rejected",trace:traceRecord(traceId,"mission.paused","Mission paused",{job_id:job.id})}});
+  return {missionId,status:"paused"};
+ }
+ const currentIndex=Number(job.input?.context?.missionStepIndex||0);
+ const next=steps.find((x:any)=>Number(x.input?.context?.missionStepIndex||0)>currentIndex&&x.status==="blocked");
+ if(next){
+  await db.from("workflow_executions").update({status:"queued"}).eq("organization_id",ORG_ID).eq("id",next.id).eq("status","blocked");
+ }
+ const refreshed=await db.from("workflow_executions")
+  .select("id,status,input")
+  .eq("organization_id",ORG_ID)
+  .eq("input->>kind","agent_home")
+  .eq("input->context->>missionId",missionId);
+ const children=refreshed.data||[];
+ const completed=children.filter((x:any)=>x.status==="completed").length;
+ const failed=children.filter((x:any)=>x.status==="failed").length;
+ const active=children.filter((x:any)=>["queued","processing","awaiting_approval"].includes(x.status)).length;
+ const done=completed===children.length&&children.length>0;
+ await db.from("workflow_executions").update({
+  status:done?"completed":"active",
+  output:{progress:{total:children.length,completed,failed,active,percent:children.length?Math.round((completed/children.length)*100):0},external_action_taken:false},
+  ...(done?{completed_at:new Date().toISOString()}:{})
+ }).eq("organization_id",ORG_ID).eq("id",missionId);
+ await db.from("events").insert({organization_id:ORG_ID,event_type:done?"super_agent.mission.completed":"super_agent.step.unlocked",aggregate_type:"super_agent_mission",aggregate_id:missionId,payload:{completed_job_id:job.id,next_job_id:next?.id||null,trace:traceRecord(traceId,done?"mission.completed":"mission.step.unlocked",done?"Mission completed":"Mission step unlocked",{completed_job_id:job.id,next_job_id:next?.id||null})}});
+ return {missionId,status:done?"completed":"active",nextJobId:next?.id||null};
 }
 
 export async function GET(req:Request){
@@ -64,13 +109,22 @@ export async function POST(req:Request){
    return NextResponse.json({ok:true,jobId,mode:result.mode});
   }
   if(action==="approve"||action==="reject"){
-   if(!isApprover(user))return NextResponse.json({ok:false,error:"Founder approval required"},{status:403});
+   const missionRisk=String(job.input?.context?.missionRisk||"");
+   const missionSkill=job.input?.context?.missionSkill;
+   const ownerCanReviewMission=Boolean(
+    job.input?.context?.missionId &&
+    job.input.requested_by===user.email &&
+    ["read","draft"].includes(missionRisk) &&
+    missionSkill?.requiresApproval!==true
+   );
+   if(!isApprover(user)&&!ownerCanReviewMission)return NextResponse.json({ok:false,error:"This step requires founder approval."},{status:403});
    if(job.status!=="awaiting_approval")return NextResponse.json({ok:false,error:"Task is not awaiting review"},{status:409});
    const decision={...job.output,review:{decision:action,by:user.email,at:new Date().toISOString()},external_action_taken:false};
    const updated=await db.from("workflow_executions").update({status:action==="approve"?"completed":"failed",output:decision,completed_at:new Date().toISOString()}).eq("organization_id",ORG_ID).eq("id",jobId).eq("status","awaiting_approval").select("id,status,output").single();
    if(updated.error||!updated.data)return NextResponse.json({ok:false,error:"Task review already changed"},{status:409});
-   await logEvent(db,jobId,action==="approve"?"agent.draft.approved":"agent.draft.rejected",{by:user.email,agent:job.input.agent});
-   return NextResponse.json({ok:true,job:updated.data,external_action_taken:false});
+   await logEvent(db,jobId,action==="approve"?"agent.draft.approved":"agent.draft.rejected",{by:user.email,agent:job.input.agent,review_scope:isApprover(user)?"founder":"mission-owner"});
+   const mission=await advanceMission(db,job,action==="approve"?"approve":"reject");
+   return NextResponse.json({ok:true,job:updated.data,mission,external_action_taken:false});
   }
   if(action==="feedback"){
    const note=typeof body.note==="string"?body.note.trim():"";
