@@ -31,7 +31,7 @@ async function getProspect(db:Awaited<ReturnType<typeof requireAdminDb>>,id:stri
 }
 
 export async function GET(req:Request){
- const user=getSessionUser(req);
+ const user=await getSessionUser(req);
  if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
  const id=new URL(req.url).searchParams.get("prospectId");
  if(!id)return NextResponse.json({ok:false,error:"prospectId is required"},{status:400});
@@ -45,7 +45,7 @@ export async function GET(req:Request){
 }
 
 export async function POST(req:Request){
- const user=getSessionUser(req);
+ const user=await getSessionUser(req);
  if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
  const body=await req.json().catch(()=>({}));
  if(!body.prospectId)return NextResponse.json({ok:false,error:"prospectId is required"},{status:400});
