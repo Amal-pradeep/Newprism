@@ -19,6 +19,10 @@ const required = [
   "lib/model-adapters.ts",
   "lib/agent-skills.ts",
   "lib/free-capabilities.ts",
+  "supabase/creative-ops.sql",
+  "app/creative-ops/page.tsx",
+  "app/api/creative-ops/route.ts",
+  "lib/creative-ops.ts",
   "supabase/finance-ai.sql",
   "app/finance/page.tsx",
   "app/api/finance/route.ts",
@@ -208,6 +212,25 @@ if (!financeSql.includes("finance_email_approvals") || !financeSql.includes("den
 }
 if (!financeSql.includes("seed-al-eliza-pending-1000") || !financeSql.includes("seed-nostaza-paid-1500-one-month")) {
   throw new Error("Regression guard: founder-provided opening balances are missing from the Finance AI seed.");
+}
+
+const creativeOps = fs.readFileSync(path.join(root, "lib/creative-ops.ts"), "utf8");
+const creativeOpsApi = fs.readFileSync(path.join(root, "app/api/creative-ops/route.ts"), "utf8");
+const creativeOpsSql = fs.readFileSync(path.join(root, "supabase/creative-ops.sql"), "utf8");
+if (!creativeOps.includes("creativeTaskGuidance") || !creativeOps.includes("dailyCreativeFocus") || !creativeOps.includes("buildCreativeBrief")) {
+  throw new Error("Regression guard: Aneesh Creative Ops prioritization/brief engine is missing.");
+}
+if (!creativeOpsApi.includes("ANEESH_EMAIL") || !creativeOpsApi.includes("requireAneeshTask") || !creativeOpsApi.includes("Only Aneesh or founders can manage the creative queue")) {
+  throw new Error("Regression guard: Creative Ops task ownership boundary is missing.");
+}
+if (!creativeOpsApi.includes("creative.task.handoff") || !creativeOpsApi.includes('type:"creative_handoff"')) {
+  throw new Error("Regression guard: Creative Ops collaborator handoff notifications are missing.");
+}
+if (!creativeOpsSql.includes("creative_task_details") || !creativeOpsSql.includes("creative_task_updates") || !creativeOpsSql.includes("deny_direct_browser_access")) {
+  throw new Error("Regression guard: Creative Ops task metadata/history must remain server-only.");
+}
+if (!creativeOps.includes("Multiple revisions detected") || !creativeOpsApi.includes('updateType==="revision"')) {
+  throw new Error("Regression guard: Creative revision risk/history controls are missing.");
 }
 
 console.log("COMIT regression guard passed.");
