@@ -73,6 +73,13 @@ function selectedVariant(draft:any){
   const variants=Array.isArray(draft.creative_package?.variants)?draft.creative_package.variants:[];
   return variants.find((v:any)=>v.id===draft.selected_variant_id)||variants[0]||null;
 }
+async function markApprovalNotificationRead(db:any,approvalId:string,email:string){
+  await db.from("notifications")
+    .update({read_at:new Date().toISOString()})
+    .eq("organization_id",ORG_ID)
+    .contains("metadata",{approval_id:approvalId,target_email:email});
+}
+
 async function consumeApproval(db:any,approvalId:string){
   const now=new Date().toISOString();
   await db.from("meta_action_approvals").update({status:"consumed",consumed_at:now}).eq("organization_id",ORG_ID).eq("id",approvalId).eq("status","approved");
@@ -321,6 +328,7 @@ export async function POST(req:Request){
         reviewed_at:now,
         updated_at:now
       }).eq("organization_id",ORG_ID).eq("id",draft.id);
+      await markApprovalNotificationRead(db,approval.id,user.email);
       await logEvent(db,creativeReview?"meta.creative.reviewed":"meta.external_approval.reviewed",draft.id,{
         by:user.email,decision,action:approval.action
       });
