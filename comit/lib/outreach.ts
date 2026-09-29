@@ -1,5 +1,4 @@
-import {supabaseAdmin} from "@/lib/supabase";
-import {createHmac,timingSafeEqual} from "crypto";
+import {supabaseAdmin,supabaseFromSession} from "@/lib/supabase";
 import {teamUser} from "@/lib/team-auth";
 export const AMAL_EMAIL="amalpradeep25@gmail.com";
 export const AADIL_EMAIL="aadil.sudhir279@gmail.com";
@@ -9,9 +8,16 @@ export const SENDER_EMAIL=process.env.COMIT_OUTREACH_FROM||process.env.ORBIT_GMA
 export const REPLY_TO_EMAIL=process.env.COMIT_OUTREACH_REPLY_TO||SENDER_EMAIL;
 export type CometUser={email:string;name?:string};
 const JISHNU_EMAIL=process.env.COMIT_JISHNU_EMAIL||"jishnu.01010011@gmail.com";
-function sessionSecret(){return process.env.COMIT_SESSION_SECRET||""}
-function validSignature(payload:string,signature:string){const secret=sessionSecret();if(!secret)return false;const expected=createHmac("sha256",secret).update(payload).digest("base64url");try{return expected.length===signature.length&&timingSafeEqual(Buffer.from(expected),Buffer.from(signature))}catch{return false}}
-export function getSessionUser(req:Request):CometUser|null{const raw=req.headers.get("cookie")||"";const match=raw.match(/(?:^|;\s*)comit_session=([^;]+)/);if(!match)return null;try{const token=decodeURIComponent(match[1]);const [payload,signature]=token.split(".");if(!payload||!signature||!validSignature(payload,signature))return null;const decoded=JSON.parse(Buffer.from(payload,"base64url").toString("utf8"));const issued=Number(decoded.iat||0);if(!issued||issued>Date.now()+60000||Date.now()-issued>604800000)return null;const user=teamUser(String(decoded.email||""));if(!user)return null;return{email:user.email,name:user.name}}catch{return null}}
+export async function getSessionUser(_req?:Request):Promise<CometUser|null>{
+  try{
+    const client=await supabaseFromSession();
+    if(!client)return null;
+    const {data,error}=await client.auth.getUser();
+    if(error||!data.user?.email||!data.user.email_confirmed_at)return null;
+    const user=teamUser(data.user.email);
+    return user?{email:user.email,name:user.name}:null;
+  }catch{return null}
+}
 export function isApprover(user:CometUser|null){return!!user&&[AMAL_EMAIL,AADIL_EMAIL].includes(user.email.toLowerCase())}
 export function isRestaurantProspect(prospect:any){const industry=String(prospect?.metadata?.industry||prospect?.companies?.industry||"").toLowerCase();return /restaurant|hospitality|cafe|f&b|food/.test(industry)}
 export function outreachBody(prospect:any){
@@ -45,4 +51,10 @@ function base64Url(input:string){return Buffer.from(input).toString("base64url")
 function rawMail(p:{to:string;subject:string;body:string}){const headers=["MIME-Version: 1.0",'Content-Type: text/plain; charset="UTF-8"',"Content-Transfer-Encoding: 8bit","From: "+SENDER_EMAIL,"To: "+p.to,"Reply-To: "+REPLY_TO_EMAIL,"Subject: "+p.subject];return base64Url(headers.join("\r\n")+"\r\n\r\n"+p.body)}
 export async function googleAccessToken(){const clientId=process.env.GOOGLE_CLIENT_ID,clientSecret=process.env.GOOGLE_CLIENT_SECRET,refreshToken=process.env.ORBIT_GMAIL_REFRESH_TOKEN;if(!clientId||!clientSecret||!refreshToken)throw new Error("Gmail sending is not configured in COMIT. Connect Prism Gmail OAuth credentials first.");const response=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({client_id:clientId,client_secret:clientSecret,refresh_token:refreshToken,grant_type:"refresh_token"})});const data=await response.json();if(!response.ok)throw new Error(data.error_description||data.error||"Google OAuth failed");return data.access_token as string}
 export async function sendApprovedEmail(p:{to:string;cc?:string[];subject:string;body:string;threadId?:string|null}){const accessToken=await googleAccessToken();const response=await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send",{method:"POST",headers:{Authorization:"Bearer "+accessToken,"Content-Type":"application/json"},body:JSON.stringify({raw:rawMail(p),...(p.threadId?{threadId:p.threadId}:{})})});const data=await response.json();if(!response.ok)throw new Error(data.error?.message||"Gmail API send failed");return data as{id?:string;threadId?:string}}
-export async function requireAdminDb(){const admin=supabaseAdmin();if(!admin)throw new Error("Supabase server credentials are not configured.");return admin}
+export async function requireAdminDb(){
+  const admin=supabaseAdmin();
+  if(admin)return admin;
+  const userClient=await supabaseFromSession();
+  if(!userClient)throw new Error("Sign in with your approved COMIT email first.");
+  return userClient;
+}

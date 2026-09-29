@@ -236,4 +236,23 @@ if (!creativeOps.includes("Multiple revisions detected") || !creativeOpsApi.incl
   throw new Error("Regression guard: Creative revision risk/history controls are missing.");
 }
 
+const supabaseRuntime = fs.readFileSync(path.join(root, "lib/supabase.ts"), "utf8");
+const authRoute = fs.readFileSync(path.join(root, "app/api/auth/login/route.ts"), "utf8");
+const healthRoute = fs.readFileSync(path.join(root, "app/api/health/route.ts"), "utf8");
+if (!supabaseRuntime.includes("supabaseFromSession") || !supabaseRuntime.includes("comit_access_token")) {
+  throw new Error("Regression guard: Cloudflare runtime auth must use the verified Supabase user session.");
+}
+if (!authRoute.includes("getUser(accessToken)") || !authRoute.includes("comit_refresh_token")) {
+  throw new Error("Regression guard: magic-link auth must verify and persist the Supabase session.");
+}
+if (!healthRoute.includes("supabase-user-session-rls")) {
+  throw new Error("Regression guard: health endpoint must report the RLS auth strategy.");
+}
+if (!wranglerConfig.includes("NEXT_PUBLIC_SUPABASE_URL") || !wranglerConfig.includes("NEXT_PUBLIC_SUPABASE_ANON_KEY")) {
+  throw new Error("Regression guard: Cloudflare must include only the safe Supabase public runtime configuration.");
+}
+if (wranglerConfig.includes("SUPABASE_SERVICE_ROLE_KEY") || wranglerConfig.includes("COMIT_SESSION_SECRET")) {
+  throw new Error("Regression guard: private Supabase/service session secrets must not be committed to Wrangler.");
+}
+
 console.log("COMIT regression guard passed.");

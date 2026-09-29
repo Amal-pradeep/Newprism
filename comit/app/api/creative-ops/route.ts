@@ -93,7 +93,7 @@ async function logEvent(db:any,type:string,taskId:string,payload:Record<string,u
 }
 
 export async function GET(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!canRead(user))return NextResponse.json({ok:false,error:"Creative Ops is limited to Aneesh and founders."},{status:403});
   try{
     const db=await requireAdminDb();
@@ -128,7 +128,7 @@ export async function GET(req:Request){
 }
 
 export async function POST(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!canManage(user))return NextResponse.json({ok:false,error:"Only Aneesh or founders can manage the creative queue."},{status:403});
   const body=await req.json().catch(()=>({}));
   const action=String(body.action||"");

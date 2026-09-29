@@ -5,7 +5,7 @@ const ORG_ID="acda1757-1698-405a-8451-5674316ceeaf";
 export const dynamic="force-dynamic";
 
 export async function GET(request:Request){
-  const user=getSessionUser(request);
+  const user=await getSessionUser(request);
   if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
   try{
     const db=await requireAdminDb();
@@ -44,7 +44,7 @@ export async function GET(request:Request){
 }
 
 export async function POST(request:Request){
-  const user=getSessionUser(request);
+  const user=await getSessionUser(request);
   if(!user||!isApprover(user))return NextResponse.json({ok:false,error:"Founder approval required"},{status:403});
   return NextResponse.json({
     ok:false,

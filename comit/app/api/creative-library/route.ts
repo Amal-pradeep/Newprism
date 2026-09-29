@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { getSessionUser } from "@/lib/outreach";
+import { getSessionUser, requireAdminDb } from "@/lib/outreach";
 
 export const dynamic = "force-dynamic";
 const ORG_ID = "acda1757-1698-405a-8451-5674316ceeaf";
@@ -10,7 +9,7 @@ const ASSET_TYPES = ["raw_ideas", "shoot_briefs", "footage_refs", "edits", "spot
 const MAX_BYTES = 25 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["video/mp4", "video/quicktime", "video/webm", "image/jpeg", "image/png", "image/webp", "application/pdf"]);
 
-async function getSpace(db: NonNullable<ReturnType<typeof supabaseAdmin>>) {
+async function getSpace(db:any) {
   const { data, error } = await db.from("creative_library_spaces")
     .select("id,name,slug,asset_types,ai_adaptation_enabled,evolution_mode")
     .eq("organization_id", ORG_ID).eq("slug", SPACE_SLUG).single();
@@ -18,9 +17,8 @@ async function getSpace(db: NonNullable<ReturnType<typeof supabaseAdmin>>) {
 }
 
 export async function GET(req: Request) {
-  if (!getSessionUser(req)) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-  const db = supabaseAdmin();
-  if (!db) return NextResponse.json({ error: "Shared library storage is not configured yet." }, { status: 503 });
+  if (!(await getSessionUser(req))) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  const db = await requireAdminDb();
   const space = await getSpace(db);
   if (!space) return NextResponse.json({ error: "Creative library is awaiting its database migration." }, { status: 503 });
   const [{ data: assets, error: assetError }, { data: learnings, error: learningError }] = await Promise.all([
@@ -36,10 +34,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const user = getSessionUser(req);
+  const user = await getSessionUser(req);
   if (!user) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-  const db = supabaseAdmin();
-  if (!db) return NextResponse.json({ error: "Shared library storage is not configured yet." }, { status: 503 });
+  const db = await requireAdminDb();
   const space = await getSpace(db);
   if (!space) return NextResponse.json({ error: "Creative library is awaiting its database migration." }, { status: 503 });
   const form = await req.formData().catch(() => null);

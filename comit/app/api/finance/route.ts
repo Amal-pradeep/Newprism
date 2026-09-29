@@ -53,7 +53,7 @@ async function logEvent(db:any,type:string,invoiceId:string,payload:Record<strin
 }
 
 export async function GET(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!isFinanceUser(user))return NextResponse.json({ok:false,error:"Finance access is limited to Amal and Aadil."},{status:403});
   try{
     const db=await requireAdminDb();
@@ -70,7 +70,7 @@ export async function GET(req:Request){
 }
 
 export async function POST(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!isFinanceUser(user))return NextResponse.json({ok:false,error:"Finance access is limited to Amal and Aadil."},{status:403});
   const body=await req.json().catch(()=>({}));
   const action=String(body.action||"");
@@ -205,6 +205,13 @@ export async function POST(req:Request){
         approved_at:now,
         updated_at:now
       }).eq("id",approvalId).eq("status","pending");
+
+      const gmailConfigured=Boolean(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET&&process.env.ORBIT_GMAIL_REFRESH_TOKEN);
+      if(!gmailConfigured){
+        const mailto="mailto:"+encodeURIComponent(approval.data.to_email)+"?subject="+encodeURIComponent(approval.data.subject)+"&body="+encodeURIComponent(approval.data.body);
+        await logEvent(db,"finance.reminder.approved_manual",approval.data.invoice_id,{by:user!.email,approval_id:approvalId});
+        return NextResponse.json({ok:true,status:"approved_manual",mailtoUrl:mailto});
+      }
 
       try{
         const sent=await sendApprovedEmail({

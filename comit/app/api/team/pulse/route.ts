@@ -6,7 +6,7 @@ const statuses=new Set(["available","focused","blocked","done"]);
 export const dynamic="force-dynamic";
 
 export async function GET(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
   try{
     const db=await requireAdminDb();
@@ -36,7 +36,7 @@ export async function GET(req:Request){
 }
 
 export async function POST(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
   const body=await req.json().catch(()=>({}));
   const status=String(body.status||"focused");

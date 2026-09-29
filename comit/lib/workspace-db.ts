@@ -1,11 +1,10 @@
-import { supabaseAdmin } from "@/lib/supabase";
-import { getSessionUser } from "@/lib/outreach";
+import { getSessionUser, requireAdminDb } from "@/lib/outreach";
 import { teamUser, teamUsers } from "@/lib/team-auth";
 
 export type WorkspaceMember = { email: string; name: string; role: "owner" | "member"; active?: number };
 
-export function workspaceClient() {
-  return supabaseAdmin();
+export async function workspaceClient() {
+  try{return await requireAdminDb()}catch{return null}
 }
 
 export function sameOrigin(request: Request) {
@@ -13,8 +12,8 @@ export function sameOrigin(request: Request) {
   return origin === new URL(request.url).origin;
 }
 
-export function workspaceMember(request: Request): WorkspaceMember | null {
-  const session = getSessionUser(request);
+export async function workspaceMember(request: Request):Promise<WorkspaceMember|null> {
+  const session = await getSessionUser(request);
   if (!session) return null;
   const known = teamUser(session.email);
   if (!known) return null;
@@ -43,7 +42,7 @@ export function workspaceMembers(): WorkspaceMember[] {
 }
 
 export const workspaceUnavailable = () => Response.json(
-  { error: "Shared workspace is not configured. Add Supabase server credentials before using shared records." },
+  { error: "Shared workspace is unavailable for this session." },
   { status: 503 }
 );
 export const workspaceUnauthorized = () => Response.json(

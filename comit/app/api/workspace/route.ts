@@ -7,9 +7,9 @@ const categories = new Set(["shoot brief", "footage reference", "edit", "spot ed
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function GET(request: Request) {
-  const db = workspaceClient();
+  const db = await workspaceClient();
   if (!db) return workspaceUnavailable();
-  const member = workspaceMember(request);
+  const member = await workspaceMember(request);
   if (!member) return workspaceUnauthorized();
 
   const [prospects, drafts, checkins, creative] = await Promise.all([
@@ -33,9 +33,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return Response.json({ error: "Invalid request origin." }, { status: 403 });
-  const db = workspaceClient();
+  const db = await workspaceClient();
   if (!db) return workspaceUnavailable();
-  const member = workspaceMember(request);
+  const member = await workspaceMember(request);
   if (!member) return workspaceUnauthorized();
   const body = await request.json().catch(() => null);
   const action = String(body?.action || "");

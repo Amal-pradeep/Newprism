@@ -9,7 +9,7 @@ const ACTIVE_STAGES = new Set(["replied","meeting","won","lost"]);
 function normalizeStage(value:string){return ["replied","meeting","won","lost","contacted"].includes(value)?value:"replied"}
 
 export async function GET(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
   try{
     const db=await requireAdminDb();
@@ -50,7 +50,7 @@ export async function GET(req:Request){
 }
 
 export async function POST(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!user||!isApprover(user))return NextResponse.json({ok:false,error:"Only Amal or Aadil can change outreach state."},{status:403});
   try{
     const body=await req.json();
