@@ -66,6 +66,19 @@ async function loadTasks(db:any){
   });
 }
 
+
+async function requireAneeshTask(db:any,taskId:string){
+  if(!validUuid(taskId))throw new Error("Valid task id required.");
+  const task=await db.from("tasks")
+    .select("id,assignee_email")
+    .eq("organization_id",ORG_ID)
+    .eq("id",taskId)
+    .eq("assignee_email",ANEESH_EMAIL)
+    .single();
+  if(task.error||!task.data)throw new Error("Aneesh creative task not found.");
+  return task.data;
+}
+
 async function logEvent(db:any,type:string,taskId:string,payload:Record<string,unknown>){
   await db.from("events").insert({
     organization_id:ORG_ID,
@@ -195,6 +208,7 @@ export async function POST(req:Request){
 
     if(action==="update_brief"){
       const taskId=String(body.taskId||"");
+      await requireAneeshTask(db,taskId);
       const current=await db.from("creative_task_details").select("*").eq("organization_id",ORG_ID).eq("task_id",taskId).single();
       if(current.error||!current.data)return NextResponse.json({ok:false,error:"Creative task details not found."},{status:404});
       const patch:any={updated_by:user!.email,updated_at:new Date().toISOString()};
@@ -217,6 +231,7 @@ export async function POST(req:Request){
 
     if(action==="regenerate_brief"){
       const taskId=String(body.taskId||"");
+      await requireAneeshTask(db,taskId);
       const task=await db.from("tasks").select("*").eq("organization_id",ORG_ID).eq("id",taskId).eq("assignee_email",ANEESH_EMAIL).single();
       const detail=await db.from("creative_task_details").select("*").eq("organization_id",ORG_ID).eq("task_id",taskId).single();
       if(task.error||detail.error)return NextResponse.json({ok:false,error:"Creative task not found."},{status:404});
@@ -233,6 +248,7 @@ export async function POST(req:Request){
 
     if(action==="add_update"){
       const taskId=String(body.taskId||"");
+      await requireAneeshTask(db,taskId);
       const updateType=String(body.updateType||"note");
       const note=clean(body.note,3000);
       if(!validUuid(taskId)||!UPDATE_TYPES.has(updateType)||!note)return NextResponse.json({ok:false,error:"Task, update type and note are required."},{status:400});
@@ -260,6 +276,7 @@ export async function POST(req:Request){
 
     if(action==="add_asset_link"){
       const taskId=String(body.taskId||"");
+      await requireAneeshTask(db,taskId);
       const url=clean(body.url,1200);
       const label=clean(body.label,160)||"Creative asset";
       if(!validUuid(taskId)||!validHttps(url))return NextResponse.json({ok:false,error:"Add a valid HTTPS asset link."},{status:400});
