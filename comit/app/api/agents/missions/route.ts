@@ -11,7 +11,7 @@ const ORG_ID="acda1757-1698-405a-8451-5674316ceeaf";
 export const dynamic="force-dynamic";
 
 export async function GET(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
   try{
     const db=await requireAdminDb();
@@ -89,7 +89,7 @@ export async function GET(req:Request){
 }
 
 export async function POST(req:Request){
-  const user=getSessionUser(req);
+  const user=await getSessionUser(req);
   if(!user)return NextResponse.json({ok:false,error:"Authentication required"},{status:401});
   const body=await req.json().catch(()=>({}));
   const task=typeof body.task==="string"?body.task.trim():"";
