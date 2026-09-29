@@ -25,10 +25,16 @@ const cards=[
 type InstallPrompt=Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:"accepted"|"dismissed"}>};
 
 export default function CommandCenter(){
-  const [nudge,setNudge]=useState("A clear next action is better than another open tab.");
+  const [nudge]=useState("A clear next action is better than another open tab.");
   const [notice,setNotice]=useState("");
+  const [personalAlerts,setPersonalAlerts]=useState<Array<{id:string;type:string;title:string;body?:string|null;metadata:any;read_at?:string|null;created_at:string}>>([]);
+  const [unread,setUnread]=useState(0);
   const [installPrompt,setInstallPrompt]=useState<InstallPrompt|null>(null);
   useEffect(()=>{
+    void fetch("/api/notifications",{cache:"no-store"})
+      .then(r=>r.json())
+      .then(d=>{if(d?.ok){setPersonalAlerts(d.notifications||[]);setUnread(Number(d.unread||0))}})
+      .catch(()=>{});
     const onInstall=(event:Event)=>{event.preventDefault();setInstallPrompt(event as InstallPrompt)};
     window.addEventListener("beforeinstallprompt",onInstall);
     return()=>window.removeEventListener("beforeinstallprompt",onInstall);
