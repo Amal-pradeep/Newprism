@@ -40,3 +40,12 @@ button:disabled { cursor: not-allowed; }
 button,a,input,select,textarea { touch-action: manipulation; }
 :focus-visible { outline: 2px solid var(--prism-cyan); outline-offset: 3px; }
 select option { background: #0c1224; color: #f7f9ff; }
+.comit-logo { flex-shrink: 0; }
+.comit-logo-loading { filter: drop-shadow(0 0 12px #6d5cff88); animation: comit-breathe 1.6s ease-in-out infinite; }
+.comit-logo-loading .comit-logo-core { transform-origin: 32px 35px; animation: comit-core 1.6s ease-in-out infinite; }
+.comit-loading-track { width: 120px; height: 3px; overflow: hidden; background: var(--prism-border); border-radius: 9px; }
+.comit-loading-track span { display: block; width: 40%; height: 100%; background: var(--prism-cyan); animation: comit-progress 1.2s ease-in-out infinite alternate; }
+@keyframes comit-breathe { 50% { opacity: .6; transform: scale(.94); } }
+@keyframes comit-core { 50% { transform: scale(.7); } }
+@keyframes comit-progress { to { transform: translateX(150%); } }
+@media (prefers-reduced-motion: reduce) { .comit-logo-loading, .comit-logo-loading .comit-logo-core, .comit-loading-track span { animation: none; } }

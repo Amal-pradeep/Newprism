@@ -2,10 +2,19 @@ name: COMIT CI
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'comit/**'
+      - 'index.html'
+      - '.github/workflows/comit.yml'
+
+permissions:
+  contents: read
 
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: comit
@@ -13,7 +22,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - run: npm install
-      - run: npm run typecheck
-      - run: npm run build
+          node-version: 24
+          cache: npm
+          cache-dependency-path: comit/package-lock.json
+      - run: npm ci
+      - run: npm run verify:cloudflare

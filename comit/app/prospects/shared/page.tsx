@@ -1,5 +1,6 @@
 "use client";
 
+import {requestJson} from "@/lib/client-request";
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, ExternalLink, Mail, Search, ShieldCheck, Sparkles, XCircle } from "lucide-react";
 
@@ -22,15 +23,13 @@ export default function ProspectsPage() {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
+  const [adding,setAdding]=useState(false);
+  const [lead,setLead]=useState({name:"",email:"",industry:"",location:"",source:"",notes:""});
   const [winPlan, setWinPlan] = useState<any>(null);
 
   async function load() {
-    const r = await fetch("/api/prospects", { cache: "no-store" });
-    const d = await r.json();
-    if (r.ok) {
-      setProspects(d.data || []);
-      setUser(d.user || null);
-    } else setMessage(d.error || "Could not load prospect database.");
+    try {const d=await requestJson("/api/prospects",{cache:"no-store"});setProspects(d.data||[]);setUser(d.user||null);}
+    catch(error){setMessage(error instanceof Error ? error.message : "Could not load prospects.");}
   }
 
   useEffect(() => { load(); }, []);
@@ -41,24 +40,20 @@ export default function ProspectsPage() {
     return prospects.filter(p => [p.name, p.email, p.metadata?.industry, p.metadata?.location, p.notes].join(" ").toLowerCase().includes(query));
   }, [prospects, q]);
 
-  async function showWinPlan(id: string) { setBusy(id); setMessage(""); const r=await fetch(`/api/win-strategy?prospectId=${encodeURIComponent(id)}`,{cache:"no-store"}); const d=await r.json(); setWinPlan(r.ok?d:null); setMessage(r.ok?"Win strategy generated from current account evidence.":d.error||"Could not build win strategy."); setBusy(""); }
-
-  async function prepare(id: string) {
-    setBusy(id); setMessage("");
-    const r = await fetch("/api/outreach", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "prepare", prospectId: id }) });
-    const d = await r.json();
-    setMessage(r.ok ? "Cold email prepared and added to the approval queue." : d.error || "Could not prepare email.");
-    setBusy("");
-    load();
+  async function runAction(key: string, operation: () => Promise<any>, success: string) {
+    if(busy)return;setBusy(key);setMessage("");
+    try {await operation();setMessage(success);await load();}
+    catch(error){setMessage(error instanceof Error ? error.message : "Operation failed. Please try again.");}
+    finally{setBusy("");}
   }
-
+  async function showWinPlan(id: string) {
+    await runAction(id, async()=>{setWinPlan(await requestJson(`/api/win-strategy?prospectId=${encodeURIComponent(id)}`,{cache:"no-store"}));}, "Win strategy generated from current account evidence.");
+  }
+  async function prepare(id: string) {
+    await runAction(id,()=>requestJson("/api/outreach",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"prepare",prospectId:id})}),"Cold email prepared and added to the approval queue.");
+  }
   async function decide(approvalId: string, action: "approve" | "reject") {
-    setBusy(approvalId); setMessage("");
-    const r = await fetch("/api/outreach", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, approvalId }) });
-    const d = await r.json();
-    setMessage(r.ok ? (action === "approve" ? "Approved: email sent from prismofstories25@gmail.com." : "Outreach rejected.") : d.error || "Operation failed.");
-    setBusy("");
-    load();
+    await runAction(approvalId,()=>requestJson("/api/outreach",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action,approvalId})}),action==="approve"?"Email sent through the connected business mailbox.":"Outreach rejected.");
   }
 
   return (
@@ -76,6 +71,8 @@ export default function ProspectsPage() {
           </div>
         </div>
 
+        <div className="mb-5 flex flex-wrap gap-3"><button onClick={()=>setAdding(value=>!value)} className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black">{adding?"Close lead form":"Add researched lead"}</button><a href="/prospects" className="rounded-xl border border-[var(--prism-border)] px-4 py-2 text-sm">Drafts on this device</a><a href="/outreach/shared" className="rounded-xl border border-[var(--prism-border)] px-4 py-2 text-sm">Daily outreach</a></div>
+        {adding&&<form onSubmit={event=>{event.preventDefault();void runAction("add",async()=>{await requestJson("/api/prospects",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(lead)});setLead({name:"",email:"",industry:"",location:"",source:"",notes:""});setAdding(false);},"Lead added to the shared sales database for research.");}} className="mb-5 grid gap-3 rounded-2xl border border-[var(--prism-border)] p-5 sm:grid-cols-2">{(["name","email","industry","location","source","notes"] as const).map(key=><label key={key} className="text-sm capitalize">{key}<input required={["name","source","notes"].includes(key)} type={key==="email"?"email":key==="source"?"url":"text"} value={lead[key]} onChange={event=>setLead(value=>({...value,[key]:event.target.value}))} className="mt-1 w-full rounded-xl border border-[var(--prism-border)] bg-transparent p-3"/></label>)}<p className="text-sm text-[var(--prism-muted)] sm:col-span-2">Record the official source and a specific business need. Contact details need verification before outreach.</p><button disabled={!!busy} className="rounded-xl bg-white p-3 text-sm font-semibold text-black disabled:opacity-50">{busy==="add"?"Saving…":"Save shared lead"}</button></form>}
         {winPlan && <section className="mb-5 rounded-2xl border border-violet-400/30 bg-violet-500/5 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs text-[var(--prism-muted)]">WIN STRATEGY ENGINE</p><h2 className="text-xl font-semibold">{winPlan.prospect?.name || "Account"} · {winPlan.plan.win_score}/100</h2><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.strategy}</p></div><button onClick={()=>setWinPlan(null)} className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs">Close</button></div><div className="mt-4 grid gap-4 lg:grid-cols-2"><div><h3 className="text-sm font-medium">Opening</h3><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.opening}</p><h3 className="mt-4 text-sm font-medium">Value hypothesis</h3><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.value_hypothesis}</p><h3 className="mt-4 text-sm font-medium">Next action</h3><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.next_action}</p></div><div><h3 className="text-sm font-medium">Research gaps</h3><ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-[var(--prism-muted)]">{winPlan.plan.research_gaps.map((x:string)=><li key={x}>{x}</li>)}</ul><h3 className="mt-4 text-sm font-medium">Discovery</h3><p className="mt-1 text-sm text-[var(--prism-muted)]">{winPlan.plan.discovery_questions.slice(0,5).join(" · ")}</p></div></div></section>}
 
         <div className="mb-5 grid gap-4 sm:grid-cols-3">
@@ -115,7 +112,8 @@ export default function ProspectsPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <button disabled={busy===p.id} onClick={()=>showWinPlan(p.id)} className="inline-flex items-center gap-2 rounded-xl border border-violet-400/30 px-3 py-2 text-xs hover:bg-violet-500/10"><Sparkles size={14}/> {busy===p.id ? "Researching…" : "Build Win Strategy"}</button>\n                    {!pending && p.email && <button disabled={busy===p.id} onClick={()=>prepare(p.id)} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs hover:bg-white/5"><Mail size={14}/> {busy===p.id ? "Preparing…" : "Prepare cold email"}</button>}
+                    <button disabled={!!busy} onClick={()=>showWinPlan(p.id)} className="inline-flex items-center gap-2 rounded-xl border border-violet-400/30 px-3 py-2 text-xs hover:bg-violet-500/10"><Sparkles size={14}/> {busy===p.id ? "Researching…" : "Build Win Strategy"}</button>
+                    {!pending && p.email && <button disabled={!!busy} onClick={()=>prepare(p.id)} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs hover:bg-white/5"><Mail size={14}/> {busy===p.id ? "Preparing…" : "Prepare cold email"}</button>}
                     {!p.email && <span className="rounded-xl border border-[var(--prism-border)] px-3 py-2 text-xs text-[var(--prism-muted)]">Verify email first</span>}
                   </div>
                 </div>
@@ -125,12 +123,12 @@ export default function ProspectsPage() {
                   <div className="text-xs text-[var(--prism-muted)]">To: {pending.to_email} · CC: {(pending.cc_emails || []).join(", ")}</div>
                   <div className="mt-3 whitespace-pre-wrap rounded-lg bg-black/20 p-3 text-sm">{pending.body}</div>
                   <div className="mt-3 flex gap-2">
-                    <button disabled={busy===pending.id} onClick={()=>decide(pending.id,"approve")} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-black"><CheckCircle2 size={15}/> {busy===pending.id ? "Sending…" : "Approve & Send"}</button>
-                    <button disabled={busy===pending.id} onClick={()=>decide(pending.id,"reject")} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-4 py-2 text-sm"><XCircle size={15}/> Reject</button>
+                    <button disabled={!!busy} onClick={()=>decide(pending.id,"approve")} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-black"><CheckCircle2 size={15}/> {busy===pending.id ? "Sending…" : "Approve & Send"}</button>
+                    <button disabled={!!busy} onClick={()=>decide(pending.id,"reject")} className="inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-4 py-2 text-sm"><XCircle size={15}/> Reject</button>
                   </div>
                 </div>}
 
-                {!pending && latest?.status === "sent" && <div className="mt-4 flex items-center gap-2 text-xs text-emerald-300"><CheckCircle2 size={14}/> Sent from prismofstories25@gmail.com · approved by {latest.approved_by}</div>}
+                {!pending && latest?.status === "sent" && <div className="mt-4 flex items-center gap-2 text-xs text-emerald-300"><CheckCircle2 size={14}/> Sent through the connected mailbox · approved by {latest.approved_by}</div>}
               </article>
             );
           })}
