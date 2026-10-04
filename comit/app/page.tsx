@@ -3,13 +3,15 @@
 import {useEffect, useState} from "react";
 import Link from "next/link";
 import {Activity, ArrowUpRight, Bell, Bot, Mail, ShieldCheck, Sparkles, Target, Users, Workflow, Clapperboard, Database, Megaphone, WalletCards, Palette} from "lucide-react";
+import DailyRevenue from "@/components/daily-revenue";
+import {requestJson} from "@/lib/client-request";
 import ComitAssistant from "@/components/comit-assistant";
 
 const cards=[
   ["WIN Engine","Revenue → delivery → learning operating loop","/win-strategy",Sparkles],
   ["Shared Workspace","Team updates and private sign-in","/workspace",Database],
-  ["Prospects","Research and qualify accounts","/prospects",Target],
-  ["Outreach","Review drafts and follow-ups","/outreach",Mail],
+  ["Prospects","Research and qualify accounts","/prospects/shared",Target],
+  ["Outreach","Review drafts and follow-ups","/outreach/shared",Mail],
   ["Team","Ownership and check-ins","/team",Users],
   ["Team Pulse","Live focus, blockers and handoffs","/team/pulse",Users],
   ["Finance AI","Aadil · payments, collections and reminder approvals","/finance",WalletCards],
@@ -45,15 +47,20 @@ export default function CommandCenter(){
     if(!("Notification" in window)){setNotice("This browser does not support desktop notifications.");return}
     const permission=Notification.permission==="default"?await Notification.requestPermission():Notification.permission;
     if(permission!=="granted"){setNotice("Notifications were not enabled. You can still use COMIT without them.");return}
-    new Notification("COMIT check-in",{body:nudge});
-    setNotice("Check-in reminder shown on this device.");
+    try {
+      const registration=await navigator.serviceWorker?.getRegistration();
+      if(registration)await registration.showNotification("COMIT check-in",{body:nudge});
+      else new Notification("COMIT check-in",{body:nudge});
+      setNotice("Check-in reminder shown on this device.");
+    }catch{setNotice("This device could not show a notification. Your reminders remain available in COMIT.");}
   }
   async function install(){
     if(!installPrompt){setNotice("Install is unavailable in this browser. Use the browser menu’s Install or Add to Home Screen option.");return}
-    await installPrompt.prompt();
+    try {await installPrompt.prompt();
     const choice=await installPrompt.userChoice;
     setNotice(choice.outcome==="accepted"?"COMIT was added to this device.":"Install was dismissed.");
     setInstallPrompt(null);
+    }catch{setNotice("Install could not start. Use your browser’s Add to Home Screen option.");}
   }
   return <main className="min-h-screen bg-[var(--prism-bg)] p-5 pb-24 text-[var(--prism-text)] lg:p-8">
     <div className="mx-auto max-w-7xl">
@@ -62,6 +69,7 @@ export default function CommandCenter(){
         <div className="flex gap-2"><button onClick={notify} className="relative inline-flex items-center gap-2 rounded-xl border border-[var(--prism-border)] px-3 py-2 text-sm"><Bell size={15}/>Reminder{unread>0&&<span className="ml-1 rounded-full bg-white px-1.5 py-0.5 text-[10px] font-semibold text-black">{unread}</span>}</button><button onClick={install} className="rounded-xl bg-white px-3 py-2 text-sm font-medium text-black">Install app</button></div>
       </header>
       {notice&&<p role="status" className="mt-4 rounded-xl border border-[var(--prism-border)] p-3 text-sm">{notice}</p>}
+      <DailyRevenue/>
       <section aria-label="COMIT sections" className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{cards.map(([label,desc,href,Icon])=><Link href={href} key={href} className="rounded-2xl border border-[var(--prism-border)] bg-[var(--prism-surface)] p-5 transition hover:-translate-y-0.5 hover:bg-white/[.04]"><div className="flex items-center justify-between"><Icon className="text-[var(--prism-violet)]" size={20}/><ArrowUpRight size={16} className="text-[var(--prism-muted)]"/></div><div className="mt-4 font-medium">{label}</div><div className="mt-1 text-xs text-[var(--prism-muted)]">{desc}</div></Link>)}</section>
       <ComitAssistant/>
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.35fr_1fr]">

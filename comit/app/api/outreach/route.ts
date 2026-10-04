@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     const db = await requireAdminDb();
 
     if (action === "prepare") {
-      const { data: prospect, error: prospectError } = await db.from("prospects").select("*, companies(name,website,industry,location)").eq("id", prospectId).single();
+      const { data: prospect, error: prospectError } = await db.from("prospects").select("*, companies(name,website,industry,location)").eq("id", prospectId).eq("organization_id",ORG_ID).single();
       if (prospectError || !prospect) return NextResponse.json({ ok: false, error: "Prospect not found." }, { status: 404 });
       if (!prospect.email) return NextResponse.json({ ok: false, error: "This prospect has no verified public business email yet." }, { status: 400 });
 
@@ -93,15 +93,25 @@ export async function POST(req: Request) {
 
     if (action === "approve") {
       if (!approvalId) return NextResponse.json({ ok: false, error: "approvalId is required." }, { status: 400 });
-      const { data: approval, error: approvalError } = await db.from("outreach_approvals").select("*").eq("id", approvalId).single();
+      const { data: approval, error: approvalError } = await db.from("outreach_approvals").select("*").eq("id", approvalId).eq("organization_id",ORG_ID).single();
       if (approvalError || !approval) return NextResponse.json({ ok: false, error: "Approval request not found." }, { status: 404 });
       if (approval.status !== "pending") return NextResponse.json({ ok: false, error: "This approval has already been processed." }, { status: 409 });
 
+      if(approval.message_type==="followup"){
+        const current=await db.from("prospects").select("stage,metadata").eq("id",approval.prospect_id).eq("organization_id",ORG_ID).maybeSingle();
+        if(current.error)throw current.error;
+        if(!current.data||["replied","meeting","won","lost","not-a-fit","unsubscribed"].includes(current.data.stage)||current.data.metadata?.do_not_contact){
+          return NextResponse.json({ok:false,error:"This lead has replied, closed or opted out. The follow-up cannot be sent."},{status:409});
+        }
+      }
+      if(!process.env.GOOGLE_CLIENT_ID||!process.env.GOOGLE_CLIENT_SECRET||!process.env.ORBIT_GMAIL_REFRESH_TOKEN)return NextResponse.json({ok:false,error:"Connect the business Gmail mailbox before approving a send. The draft remains pending."},{status:503});
       const approvedAt = new Date().toISOString();
-      const { error: approveError } = await db.from("outreach_approvals").update({
+      const { data:claimed, error: approveError } = await db.from("outreach_approvals").update({
         status: "approved", approved_by: user.email, approved_at: approvedAt, updated_at: approvedAt
-      }).eq("id", approval.id).eq("status", "pending");
+      }).eq("id", approval.id).eq("organization_id",ORG_ID).eq("status", "pending").select("id").maybeSingle();
       if (approveError) throw approveError;
+      if(!claimed)return NextResponse.json({ok:false,error:"Another request already processed this approval."},{status:409});
+      let delivered:{id?:string;threadId?:string}|null=null;
 
       try {
         const sent = await sendApprovedEmail({
@@ -112,6 +122,7 @@ export async function POST(req: Request) {
           threadId: approval.gmail_thread_id || null,
         });
 
+        delivered=sent;
         const sentAt = new Date().toISOString();
         const approvalUpdate = await db.from("outreach_approvals").update({
           status: "sent",
@@ -168,6 +179,9 @@ export async function POST(req: Request) {
           stageSyncWarning: prospectUpdate.error?.message || null
         });
       } catch (sendError:any) {
+        if(delivered){
+          return NextResponse.json({ok:true,status:"sent",gmailMessageId:delivered.id||null,warning:"Gmail accepted this message, but COMIT could not finish updating the dashboard or follow-up schedule. Reconcile the mailbox before sending again."});
+        }
         await db.from("outreach_approvals").update({ status: "failed", error: sendError?.message || "Gmail send failed", updated_at: new Date().toISOString() }).eq("id", approval.id);
         if (approval.followup_id) await db.from("outreach_followups").update({ status: "pending", notes: sendError?.message || "Gmail send failed", updated_at: new Date().toISOString() }).eq("id", approval.followup_id);
         return NextResponse.json({ ok: false, status: "failed", error: sendError?.message || "Gmail send failed" }, { status: 502 });
@@ -179,7 +193,7 @@ export async function POST(req: Request) {
       const rejectedAt = new Date().toISOString();
       const { data:approval, error } = await db.from("outreach_approvals").update({
         status: "rejected", approved_by: user.email, approved_at: rejectedAt, updated_at: rejectedAt
-      }).eq("id", approvalId).eq("status", "pending").select("followup_id").single();
+      }).eq("id", approvalId).eq("organization_id",ORG_ID).eq("status", "pending").select("followup_id").single();
       if (error) throw error;
       if (approval?.followup_id) await db.from("outreach_followups").update({ status: "pending", prepared_approval_id: null, updated_at: rejectedAt }).eq("id", approval.followup_id);
       return NextResponse.json({ ok: true, status: "rejected" });
